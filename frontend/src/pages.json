@@ -1,0 +1,33 @@
+{
+  "globalStyle": {
+    "navigationStyle": "custom",
+    "backgroundColor": "#f5f8f5",
+    "backgroundTextStyle": "light"
+  },
+  "pages": [
+    { "path": "pages/home/index" },
+    { "path": "pages/meals/index" },
+    { "path": "pages/dishes/index" },
+    { "path": "pages/wall/index" },
+    { "path": "pages/me/index" },
+    { "path": "pages/setup/index" },
+    { "path": "pages/login/index" },
+    { "path": "pages/meal-detail/index" },
+    { "path": "pages/dish-form/index" },
+    { "path": "pages/admin/index" }
+  ],
+  "uni-app-x": {
+    "pages": [
+      { "path": "pages/home/index" },
+      { "path": "pages/meals/index" },
+      { "path": "pages/dishes/index" },
+      { "path": "pages/wall/index" },
+      { "path": "pages/me/index" },
+      { "path": "pages/setup/index" },
+      { "path": "pages/login/index" },
+      { "path": "pages/meal-detail/index" },
+      { "path": "pages/dish-form/index" },
+      { "path": "pages/admin/index" }
+    ]
+  }
+}

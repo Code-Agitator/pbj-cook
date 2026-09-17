@@ -1,0 +1,29 @@
+{
+  "name": "dacook-uniapp",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev:h5": "uni --host 0.0.0.0",
+    "build:h5": "uni build",
+    "dev:app": "uni --host 0.0.0.0 -p app",
+    "build:app": "uni build -p app",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@dcloudio/uni-app": "3.0.0-alpha-5020620260914001",
+    "@dcloudio/uni-components": "3.0.0-alpha-5020620260914001",
+    "@dcloudio/uni-h5": "3.0.0-alpha-5020620260914001",
+    "vue": "3.4.20"
+  },
+  "devDependencies": {
+    "@dcloudio/types": "latest",
+    "@dcloudio/uni-cli-shared": "3.0.0-alpha-5020620260914001",
+    "@dcloudio/uni-uts-v1": "^3.0.0-alpha-5020620260914001",
+    "@dcloudio/vite-plugin-uni": "3.0.0-alpha-5020620260914001",
+    "vite": "5.2.8",
+    "vitest": "^2.1.9"
+  },
+  "overrides": {
+    "@vue/shared": "3.4.20"
+  }
+}

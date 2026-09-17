@@ -1,0 +1,2 @@
+"""DaCook FastAPI backend."""
+
