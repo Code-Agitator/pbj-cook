@@ -49,14 +49,14 @@
           </view>
         </view>
         <text class="cook-hint">认领只代表掌勺，不影响任何人点菜</text>
-        <button v-if="interaction.canCook && !interaction.isCook" class="btn cook-claim"
-                :disabled="pending('cook')" @tap="toggleCook">
+        <view v-if="interaction.canCook && !interaction.isCook" class="btn cook-claim"
+              :class="{ disabled: pending('cook') }" @tap="toggleCook">
           {{ pending('cook') ? '更新中...' : '认领主厨' }}
-        </button>
-        <button v-if="interaction.isCook" class="btn tonal cook-claim"
-                :disabled="pending('cook')" @tap="toggleCook">
+        </view>
+        <view v-if="interaction.isCook" class="btn tonal cook-claim"
+              :class="{ disabled: pending('cook') }" @tap="toggleCook">
           {{ pending('cook') ? '更新中...' : '退出主厨' }}
-        </button>
+        </view>
       </view>
 
       <view class="view-tabs">
@@ -701,9 +701,13 @@ onMounted(() => {
 
 .cook-claim {
   margin-top: 20rpx;
+  width: 100%;
   min-height: 72rpx;
   padding: 0 32rpx;
-  font-size: 26rpx
+  font-size: 26rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center
 }
 
 /* Member colors */
