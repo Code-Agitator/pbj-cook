@@ -2,11 +2,11 @@ name: Build
 
 on:
   schedule:
-    - cron: '0 1 * * *'   # 每日 UTC 1:00 (上游 GMOogway 每日 UTC 0 点更新后)
+    - cron: '0 1 * * *'   # Daily at 01:00 UTC (after upstream updates at 00:00 UTC)
   push:
     branches:
       - master
-  workflow_dispatch:
+  workflow_dispatch:       # Manual trigger
 
 permissions:
   contents: write
@@ -45,6 +45,6 @@ jobs:
             gh release upload profile Cowjiang-AdGuard.mobileconfig --clobber
           else
             gh release create profile Cowjiang-AdGuard.mobileconfig \
-              --title "Cowjiang AdGuard 描述文件" \
-              --notes "iOS 描述文件 (DoT)。安装: Safari 打开资产链接下载 → 文件 App 点开 → 安装。规则每日自动更新，无需重装。"
+              --title "Cowjiang AdGuard Profile" \
+              --notes "iOS DNS profile (DoT). Install: download the asset in Safari, open it in Files, then install. Rules update daily, no reinstall needed."
           fi

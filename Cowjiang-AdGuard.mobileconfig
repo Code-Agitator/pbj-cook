@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>PayloadContent</key>
+	<array>
+		<dict>
+			<key>DNSSettings</key>
+			<dict>
+				<key>DNSProtocol</key>
+				<string>TLS</string>
+				<key>ServerName</key>
+				<string>dns.inceptae.com</string>
+			</dict>
+			<key>PayloadDescription</key>
+			<string>https://github.com/Cowjiang</string>
+			<key>PayloadDisplayName</key>
+			<string>Cowjiang AdGuard</string>
+			<key>PayloadIdentifier</key>
+			<string>com.apple.dnsSettings.managed.dns.inceptae.dot</string>
+			<key>PayloadOrganization</key>
+			<string>Cowjiang</string>
+			<key>PayloadType</key>
+			<string>com.apple.dnsSettings.managed</string>
+			<key>PayloadUUID</key>
+			<string>7A3F2C91-5E84-4D6B-9A12-C3D8F0E51B47</string>
+			<key>PayloadVersion</key>
+			<integer>1</integer>
+			<key>ProhibitDisablement</key>
+			<false/>
+		</dict>
+	</array>
+	<key>PayloadDescription</key>
+	<string>Cowjiang AdGuard — 加密 DNS (DoT) 广告过滤，规则每日自动更新</string>
+	<key>PayloadDisplayName</key>
+	<string>Cowjiang AdGuard</string>
+	<key>PayloadIdentifier</key>
+	<string>inceptae.dot.profile</string>
+	<key>PayloadOrganization</key>
+	<string>Cowjiang</string>
+	<key>PayloadRemovalDisallowed</key>
+	<false/>
+	<key>PayloadType</key>
+	<string>Configuration</string>
+	<key>PayloadUUID</key>
+	<string>B8D6E204-91A7-4F35-8C29-D1E6A7B30F58</string>
+	<key>PayloadVersion</key>
+	<integer>1</integer>
+</dict>
+</plist>
