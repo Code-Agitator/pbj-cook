@@ -22,14 +22,9 @@
                   <Icon icon="More" :size="18"/>
                 </view>
               <view class="more-menu" v-if="showMore">
-                <button v-if="interaction.canCook" class="more-item" @tap="toggleCook">
-                  {{ interaction.isCook ? '退出主厨' : '认领主厨' }}
-                </button>
-                <button v-if="interaction.canStartCooking" class="more-item" @tap="setStatus('cooking')">结束点菜
-                </button>
-                <button v-if="interaction.canComplete" class="more-item" @tap="setStatus('done')">完成饭局</button>
-                <button v-if="interaction.canCancel" class="more-item danger" @tap="setStatus('cancelled')">取消饭局
-                </button>
+                <view v-if="interaction.isCook" class="more-item" @tap="setStatus('cooking')">结束点菜</view>
+                <view v-if="interaction.canComplete" class="more-item" @tap="setStatus('done')">完成饭局</view>
+                <view v-if="interaction.canCancel" class="more-item danger" @tap="setStatus('cancelled')">取消饭局</view>
               </view>
             </view>
           </view>
@@ -54,6 +49,14 @@
           </view>
         </view>
         <text class="cook-hint">认领只代表掌勺，不影响任何人点菜</text>
+        <button v-if="interaction.canCook && !interaction.isCook" class="btn cook-claim"
+                :disabled="pending('cook')" @tap="toggleCook">
+          {{ pending('cook') ? '更新中...' : '认领主厨' }}
+        </button>
+        <button v-if="interaction.isCook" class="btn tonal cook-claim"
+                :disabled="pending('cook')" @tap="toggleCook">
+          {{ pending('cook') ? '更新中...' : '退出主厨' }}
+        </button>
       </view>
 
       <view class="view-tabs">
@@ -73,8 +76,8 @@
           <text class="subtle">请联系管理员在"我的 > 菜品管理"中添加菜品。</text>
         </view>
         <view v-else-if="!filteredDishes.length" class="state panel">
-          <text>没有符合条件的菜品</text>
-          <button class="btn ghost" @tap="resetFilters">清除筛选</button>
+          <text class="subtle">没有符合条件的菜品</text>
+          <view class="reset-link" @tap="resetFilters">清除筛选</view>
         </view>
         <view v-else class="dish-grid">
           <DishImageCard v-for="dish in visibleDishes" :key="dish.id" :dish="dish" :src="assetUrl(dish.image_path)"
@@ -535,6 +538,17 @@ onMounted(() => {
   margin-top: 22rpx
 }
 
+.reset-link {
+  display: inline-flex;
+  min-height: 58rpx;
+  padding: 0;
+  padding-left: 12rpx;
+  align-items: center;
+  background: transparent;
+  color: var(--theme-text-action);
+  font-size: 23rpx;
+}
+
 /* Heading */
 .meal-heading {
   display: flex;
@@ -683,6 +697,13 @@ onMounted(() => {
   display: block;
   color: var(--theme-text-secondary);
   font-size: 22rpx
+}
+
+.cook-claim {
+  margin-top: 20rpx;
+  min-height: 72rpx;
+  padding: 0 32rpx;
+  font-size: 26rpx
 }
 
 /* Member colors */
