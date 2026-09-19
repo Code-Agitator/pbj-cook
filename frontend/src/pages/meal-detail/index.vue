@@ -707,7 +707,11 @@ onMounted(() => {
   font-size: 26rpx;
   display: flex;
   align-items: center;
-  justify-content: center
+  justify-content: center;
+  border: 2rpx solid var(--theme-text-primary);
+  border-radius: 12rpx;
+  background: transparent;
+  color: var(--theme-text-primary)
 }
 
 /* Member colors */
