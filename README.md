@@ -35,3 +35,7 @@ DOMAIN-SUFFIX,x,REJECT →  ||x^
 DOMAIN-KEYWORD,x       →  x        (子串匹配)
 IP-CIDR                →  (跳过, DNS 层无法按 IP 拦截)
 ```
+
+## License
+
+GPL-3.0. Rule data is sourced daily from [GMOogway/shadowrocket-rules](https://github.com/GMOogway/shadowrocket-rules) (GPL-3.0); the converted lists in this repository are therefore distributed under the same license.
