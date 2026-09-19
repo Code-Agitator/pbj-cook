@@ -1,0 +1,54 @@
+name: Renew DNS Cert
+
+on:
+  schedule:
+    - cron: '0 3 1 */2 *'  # 每单数月1日 03:00 UTC 签发一次(证书90天有效期, 留足余量)
+  workflow_dispatch:        # 支持手动触发
+
+permissions:
+  contents: write           # 发布 Release 需要
+
+jobs:
+  renew:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Issue certificate (DNS-01 via Cloudflare)
+        env:
+          CF_Token: ${{ secrets.CF_TOKEN }}
+        run: |
+          curl -s https://get.acme.sh | sh
+          ~/.acme.sh/acme.sh --issue --dns dns_cf -d dns.inceptae.com --server letsencrypt --force
+          ~/.acme.sh/acme.sh --install-cert -d dns.inceptae.com \
+            --key-file /tmp/key.pem --fullchain-file /tmp/cert.pem
+
+      - name: Deploy to Aliyun server
+        env:
+          SSH_KEY: ${{ secrets.SSH_KEY }}
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+        run: |
+          echo "$SSH_KEY" > /tmp/deploy_key && chmod 600 /tmp/deploy_key
+          scp -i /tmp/deploy_key -o StrictHostKeyChecking=no \
+            /tmp/cert.pem /tmp/key.pem root@$SSH_HOST:/opt/adguard/conf/ssl/
+          ssh -i /tmp/deploy_key -o StrictHostKeyChecking=no root@$SSH_HOST \
+            'docker restart adguardhome && sleep 6 && docker ps --filter name=adguardhome --format "{{.Status}}" && openssl s_client -connect 127.0.0.1:853 -servername dns.inceptae.com </dev/null 2>/dev/null | grep "Verify return"'
+
+      - name: Generate profile
+        run: |
+          chmod +x factory/build_agh.sh
+          ./factory/build_agh.sh
+
+      - name: Publish profile to Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view profile >/dev/null 2>&1; then
+            gh release upload profile Cowjiang-AdGuard.mobileconfig --clobber
+          else
+            gh release create profile Cowjiang-AdGuard.mobileconfig \
+              --title "Cowjiang AdGuard 描述文件" \
+              --notes "iOS 描述文件 (DoT)。安装: Safari 打开资产链接下载 → 文件 App 点开 → 安装。规则每日自动更新，无需重装。"
+          fi
+          echo "下载地址: https://github.com/Cowjiang/shadowrocket-rules/releases/download/profile/Cowjiang-AdGuard.mobileconfig"

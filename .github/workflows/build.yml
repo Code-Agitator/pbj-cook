@@ -1,0 +1,50 @@
+name: Build
+
+on:
+  schedule:
+    - cron: '0 1 * * *'   # 每日 UTC 1:00 (上游 GMOogway 每日 UTC 0 点更新后)
+  push:
+    branches:
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Fetch upstream rules (GMOogway/shadowrocket-rules)
+        run: |
+          curl -fsSL --retry 3 -o sr_reject_list.module \
+            https://raw.githubusercontent.com/GMOogway/shadowrocket-rules/master/sr_reject_list.module
+          head -3 sr_reject_list.module
+
+      - name: Build AdGuard lists & profile
+        run: |
+          chmod +x factory/build_agh.sh
+          ./factory/build_agh.sh
+
+      - name: Commit updates
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add agh_custom_reject.txt agh_sr_reject.txt Cowjiang-AdGuard.mobileconfig sr_reject_list.module
+          git diff --cached --quiet || git commit -m "build: daily update [skip ci]"
+          git push
+
+      - name: Publish profile to Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view profile >/dev/null 2>&1; then
+            gh release upload profile Cowjiang-AdGuard.mobileconfig --clobber
+          else
+            gh release create profile Cowjiang-AdGuard.mobileconfig \
+              --title "Cowjiang AdGuard 描述文件" \
+              --notes "iOS 描述文件 (DoT)。安装: Safari 打开资产链接下载 → 文件 App 点开 → 安装。规则每日自动更新，无需重装。"
+          fi
