@@ -18,7 +18,9 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from .database import UPLOAD_DIR, db, init_db, json_load, rows
+from .ingredients import aggregate_ingredients
 from .security import hash_pin, verify_pin
+from .seed import seed_dev_data
 
 TZ = ZoneInfo(os.getenv("DACOOK_TIMEZONE", "Asia/Shanghai"))
 NOW = lambda: int(time.time())
@@ -214,9 +216,16 @@ async def scheduler_loop():
         await asyncio.sleep(60)
 
 
+SEED_DEV = os.getenv("DACOOK_SEED_DEV", "") == "1"
+
+
 @asynccontextmanager
 async def lifespan(app):
     init_db()
+    if SEED_DEV:
+        with db() as conn:
+            summary = seed_dev_data(conn, NOW())
+            print(f"[seed] Dev test data initialized: {summary}")
     task = asyncio.create_task(scheduler_loop())
     yield
     task.cancel()
@@ -496,6 +505,32 @@ def get_meal(meal_id: str, me=Depends(auth_dependency)):
         data["skipped_dish_ids"] = [x["dish_id"] for x in conn.execute("SELECT dish_id FROM meal_dish_skips WHERE meal_id=?", (meal_id,)).fetchall()]
         data["my_ordered_dish_ids"] = [x["dish_id"] for x in conn.execute("SELECT dish_id FROM orders WHERE meal_id=? AND user_id=?", (meal_id, me["id"])).fetchall()]
         return data
+
+
+@app.get("/api/meals/{meal_id}/ingredient-list")
+def meal_ingredient_list(meal_id: str, me=Depends(auth_dependency)):
+    with db() as conn:
+        meal = conn.execute("SELECT id,cook_id FROM meals WHERE id=?", (meal_id,)).fetchone()
+        if not meal:
+            raise HTTPException(404, "饭局不存在")
+        if meal["cook_id"] != me["id"]:
+            raise HTTPException(403, "仅掌勺人可查看食材清单")
+        ingredient_rows = rows(conn.execute(
+            """
+            SELECT i.name,i.quantity,i.unit
+            FROM dish_ingredients i
+            JOIN (
+              SELECT DISTINCT o.dish_id FROM orders o
+              WHERE o.meal_id=? AND NOT EXISTS (
+                SELECT 1 FROM meal_dish_skips s
+                WHERE s.meal_id=o.meal_id AND s.dish_id=o.dish_id
+              )
+            ) picked ON picked.dish_id=i.dish_id
+            ORDER BY i.name,i.unit,i.ord
+            """,
+            (meal_id,),
+        ).fetchall())
+        return {"meal_id": meal_id, "items": aggregate_ingredients(ingredient_rows)}
 
 
 @app.post("/api/meals/{meal_id}/cook")

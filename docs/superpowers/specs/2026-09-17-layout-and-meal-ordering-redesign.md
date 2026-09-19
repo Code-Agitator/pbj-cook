@@ -6,6 +6,8 @@ Refactor the complete DaCook interface into a restrained modern Chinese private-
 
 The redesign covers global layout, typography, spacing, navigation, every registered page, shared components, meal ordering, ordered-dish summaries, administrator dish management, responsive H5 behavior, and WeChat Mini Program compatibility.
 
+All Vue files created or materially rewritten by this redesign use Vue 3 Composition API with `<script setup>`. Do not introduce new Options API `export default` components.
+
 ## Product Model
 
 A meal is the only context in which ordering happens:

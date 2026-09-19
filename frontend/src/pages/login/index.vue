@@ -1,24 +1,22 @@
 <template>
   <view class="page no-tab login">
-    <view class="logo">🍳</view>
-    <text class="title">{{ settings.family_name || '我家' }}开饭啦</text>
-    <text class="subtle intro">{{
-        selected ? '输入 6 位密码' : mode === 'login' ? '选择你的头像' : '新成员加入家庭'
-      }}
+    <view class="auth-mark">PBJ-Cook</view>
+    <text class="title">{{ settings.family_name || '我家' }} 开饭啦！</text>
+    <text class="subtle intro">{{ selected ? '输入 6 位密码' : mode === 'login' ? '选择你的身份' : '新成员加入家庭' }}
     </text>
     <view v-if="settings.registration_open&&!selected" class="segment">
-      <view :class="{on:mode==='login'}" @tap="switchMode('login')">登录</view>
-      <view :class="{on:mode==='register'}" @tap="switchMode('register')">注册</view>
+      <button :class="{on:mode==='login'}" @tap="switchMode('login')">登录</button>
+      <button :class="{on:mode==='register'}" @tap="switchMode('register')">注册</button>
     </view>
     <view v-if="mode==='login'&&!selected" class="members">
-      <view v-for="m in members" :key="m.id" class="member card" @tap="pickMember(m)">
-        <Avatar :name="m.name" :src="assetUrl(m.avatar_path)" :size="100"/>
-        <text>{{ m.name }}</text>
-      </view>
+      <button v-for="member in members" :key="member.id" class="member" @tap="pickMember(member)">
+        <Avatar :name="member.name" :src="assetUrl(member.avatar_path)" :size="92"/>
+        <text>{{ member.name }}</text>
+      </button>
     </view>
     <view v-if="mode==='login'&&selected" class="pin-panel">
-      <text class="back" @tap="goBack">‹ 换个成员</text>
-      <Avatar :name="selected.name" :src="assetUrl(selected.avatar_path)" :size="126"/>
+      <button class="back-member" @tap="goBack">‹ 换个成员</button>
+      <Avatar :name="selected.name" :src="assetUrl(selected.avatar_path)" :size="118"/>
       <text class="member-name">{{ selected.name }}</text>
       <PinPad v-model="pin" :disabled="submitting" @complete="loginNow"/>
     </view>
@@ -29,200 +27,188 @@
                                                                                           placeholder="注册口令"/>
       <PinPad v-model="pin" :disabled="submitting" @complete="registerNow"/>
     </view>
-    <text class="server" @tap="editServer">连接设置</text>
   </view>
 </template>
-<script>
-import Avatar from '../../components/Avatar.vue'
-import PinPad from '../../components/PinPad.vue'
-import {apiBase, assetUrl, bootstrap, clearSession, request, run, setApiBase, setSession} from '../../api/client'
+<script setup lang="js">
+import {onMounted, ref} from 'vue';
+import Avatar from '../../components/Avatar.vue';
+import PinPad from '../../components/PinPad.vue';
+import {assetUrl, bootstrap, request, run, setSession} from '../../api/client'
 
-export default {
-  components: { Avatar, PinPad },
-  created() {
-    this.assetUrl = assetUrl
-  },
-  data() {
-    return {
-      members: [],
-      settings: {},
-      selected: null,
-      mode: 'login',
-      pin: '',
-      name: '',
-      joinCode: '',
-      submitting: false
-    }
-  },
-  mounted() {
-    this.init()
-  },
-  methods: {
-    async init() {
-      try {
-        const data = await bootstrap({redirectOnUnauthorized: false})
-        if (data.setup_needed) return uni.reLaunch({url: '/pages/setup/index'})
-        this.members = data.members
-        this.settings = data.settings
-      } catch (e) {
-        uni.showToast({title: e.message || '无法连接服务器', icon: 'none'})
-      }
-    },
-    switchMode(v) {
-      this.mode = v
-      this.pin = ''
-      this.selected = null
-    },
-    pickMember(m) {
-      this.selected = m
-      this.pin = ''
-    },
-    goBack() {
-      this.selected = null
-      this.pin = ''
-    },
-    async loginNow(v) {
-      if (this.submitting || !this.selected) return
-      this.submitting = true
-      try {
-        const data = await run(() => request('/api/auth/login', {
-          method: 'POST',
-          data: {name: this.selected.name.trim(), pin: v},
-          redirectOnUnauthorized: false
-        }))
-        setSession(data)
-        uni.reLaunch({url: '/pages/home/index'})
-      } catch (e) {
-        this.pin = ''
-      } finally {
-        this.submitting = false
-      }
-    },
-    async registerNow(v) {
-      if (this.submitting) return
-      this.name = this.name.trim()
-      this.joinCode = this.joinCode.trim()
-      if (!this.name) {
-        this.pin = ''
-        return uni.showToast({title: '请填写昵称', icon: 'none'})
-      }
-      this.submitting = true
-      try {
-        const data = await run(() => request('/api/auth/register', {
-          method: 'POST',
-          data: {name: this.name, pin: v, join_code: this.joinCode},
-          redirectOnUnauthorized: false
-        }))
-        setSession(data)
-        uni.reLaunch({url: '/pages/home/index'})
-      } catch (e) {
-        this.pin = ''
-      } finally {
-        this.submitting = false
-      }
-    },
-    editServer() {
-      uni.showModal({
-        title: '后端地址', editable: true, placeholderText: apiBase(), success: r => {
-          try {
-            if (!r.confirm) return
-            if (!setApiBase(r.content)) return uni.showToast({title: '请输入有效的服务器地址', icon: 'none'})
-            clearSession()
-            uni.reLaunch({url: '/pages/login/index'})
-          } catch (error) {
-            uni.showToast({title: error.message || '服务器设置失败', icon: 'none'})
-          }
-        }
-      })
-    }
+const members = ref([]), settings = ref({}), selected = ref(null), mode = ref('login'), pin = ref(''), name = ref(''),
+    joinCode = ref(''), submitting = ref(false)
+
+async function init() {
+  try {
+    const data = await bootstrap({redirectOnUnauthorized: false});
+    if (data.setup_needed) return uni.reLaunch({url: '/pages/setup/index'});
+    members.value = Array.isArray(data.members) ? data.members : [];
+    settings.value = data.settings || {}
+  } catch (error) {
+    uni.showToast({title: error?.message || '无法连接服务器', icon: 'none'})
   }
 }
+
+function switchMode(value) {
+  mode.value = value;
+  pin.value = '';
+  selected.value = null
+}
+
+function pickMember(member) {
+  selected.value = member;
+  pin.value = ''
+}
+
+function goBack() {
+  selected.value = null;
+  pin.value = ''
+}
+
+async function loginNow(value) {
+  if (submitting.value || !selected.value) return;
+  submitting.value = true;
+  try {
+    const data = await run(() => request('/api/auth/login', {
+      method: 'POST',
+      data: {name: selected.value.name.trim(), pin: value},
+      redirectOnUnauthorized: false
+    }));
+    setSession(data);
+    uni.reLaunch({url: '/pages/home/index'})
+  } catch {
+    pin.value = ''
+  } finally {
+    submitting.value = false
+  }
+}
+
+async function registerNow(value) {
+  if (submitting.value) return;
+  name.value = name.value.trim();
+  joinCode.value = joinCode.value.trim();
+  if (!name.value) {
+    pin.value = '';
+    return uni.showToast({title: '请填写昵称', icon: 'none'})
+  }
+  submitting.value = true;
+  try {
+    const data = await run(() => request('/api/auth/register', {
+      method: 'POST',
+      data: {name: name.value, pin: value, join_code: joinCode.value},
+      redirectOnUnauthorized: false
+    }));
+    setSession(data);
+    uni.reLaunch({url: '/pages/home/index'})
+  } catch {
+    pin.value = ''
+  } finally {
+    submitting.value = false
+  }
+}
+
+onMounted(init)
 </script>
 <style scoped>.login {
   display: flex;
-  flex-direction: column;
+  padding-top: 96rpx;
   align-items: center;
-  padding-top: 105rpx
+  flex-direction: column
 }
 
-.logo {
-  width: 140rpx;
-  height: 140rpx;
-  border-radius: 42rpx;
-  background: #e5f3e9;
+.auth-mark {
   display: flex;
-  flex-direction: row;
+  padding: 12rpx;
+  margin-bottom: 26rpx;
   align-items: center;
   justify-content: center;
-  font-size: 62rpx;
-  margin-bottom: 28rpx
+  border: 1px solid var(--theme-border-subtle);
+  border-radius: 18rpx;
+  background: var(--theme-bg-surface);
+  color: var(--theme-text-action);
+  font-family: "Songti SC", "STSong", "Noto Serif CJK SC", serif;
+  font-size: 50rpx
 }
 
 .intro {
-  margin: 12rpx 0 36rpx
+  margin: 10rpx 0 38rpx
 }
 
 .segment {
-  display: flex;
-  flex-direction: row;
-  width: 430rpx;
-  padding: 8rpx;
-  border-radius: 38rpx;
-  background: #e7ebe7;
-  margin-bottom: 38rpx
+  display: grid;
+  width: 420rpx;
+  margin-bottom: 38rpx;
+  padding: 5rpx;
+  grid-template-columns:1fr 1fr;
+  border-radius: 10rpx
 }
 
-.segment view {
-  flex: 1;
-  text-align: center;
-  padding: 18rpx;
-  border-radius: 30rpx;
-  color: #68756e
-}
-
-.segment .on {
-  background: #fff;
-  color: #43a367;
-  box-shadow: 0 4rpx 12rpx rgba(40, 50, 44, .12)
-}
-
-.members {
-  width: 100%;
-  display: flex;
-  flex-direction: row;
-  flex-wrap: wrap
-}
-
-.member {
-  width: 30%;
-  margin: 0 1.5% 18rpx;
-  padding: 24rpx 10rpx;
-  display: flex;
-  align-items: center;
-  flex-direction: column;
+.segment button {
+  min-height: 66rpx;
+  background: transparent;
+  color: var(--theme-text-secondary);
   font-size: 25rpx
 }
 
-.pin-panel, .register {
+.segment button.on {
+  background: var(--theme-action-primary);
+  color: var(--theme-action-on-primary);
+  border-radius: 7rpx
+}
+
+.members {
+  display: grid;
   width: 100%;
-  max-width: 600rpx;
+  max-width: 650rpx;
+  grid-template-columns:repeat(3, minmax(0, 1fr));
+  gap: 14rpx
+}
+
+.member {
   display: flex;
+  min-height: 166rpx;
+  padding: 20rpx 12rpx;
+  align-items: center;
   flex-direction: column;
-  align-items: center
+  border: 1px solid var(--theme-border-subtle);
+  border-radius: 10rpx;
+  background: var(--theme-bg-surface);
+  color: var(--theme-text-primary);
+  font-size: 24rpx
+}
+
+.member text {
+  margin-top: 10rpx
+}
+
+.pin-panel, .register {
+  display: flex;
+  width: 100%;
+  max-width: 560rpx;
+  align-items: center;
+  flex-direction: column
+}
+
+.back-member {
+  align-self: flex-start;
+  min-height: 60rpx;
+  padding: 0;
+  background: transparent;
+  color: var(--theme-text-secondary)
 }
 
 .member-name {
-  font-weight: 700;
-  font-size: 32rpx;
-  margin-bottom: 18rpx
+  margin: 12rpx 0 22rpx;
+  font-size: 30rpx;
+  font-weight: 650
 }
 
 .register .input {
-  margin-bottom: 12rpx
+  margin-bottom: 14rpx
 }
 
-.server {
-  margin-top: 50rpx;
-  color: #96a299;
-  font-size: 23rpx
-}</style>
+.register .pin-wrap {
+  margin-top: 24rpx
+}
+
+</style>

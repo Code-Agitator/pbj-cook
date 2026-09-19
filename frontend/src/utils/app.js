@@ -123,6 +123,19 @@ export function mealInteractionState(meal, user, nowSeconds = Date.now() / 1000)
   }
 }
 
+export function ingredientListText(meal, items) {
+  const title = typeof meal?.title === 'string' && meal.title.trim() ? meal.title.trim() : '本次饭局'
+  const lines = (Array.isArray(items) ? items : []).map((item) => {
+    const name = String(item?.name || '').trim()
+    const unit = String(item?.unit || '').trim()
+    const quantities = []
+    if (Number.isFinite(Number(item?.total)) && item?.total !== null) quantities.push(`${Number(item.total)}${unit}`)
+    if (Array.isArray(item?.fragments)) quantities.push(...item.fragments.map(value => String(value).trim()).filter(Boolean))
+    return `${name}${quantities.length ? ` ${quantities.join('、')}` : ''}`.trim()
+  }).filter(Boolean)
+  return [`${title} - 食材清单`, ...lines].join('\n')
+}
+
 export function validateMealDraft(draft) {
   const date = validLocalDate(draft?.date)
   const diningTime = validTime(draft?.dining_time)

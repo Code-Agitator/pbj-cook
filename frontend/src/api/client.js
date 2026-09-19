@@ -1,6 +1,6 @@
 import { normalizeApiBase } from '../utils/app'
 
-const DEFAULT_BASE = 'http://127.0.0.1:8000'
+const DEFAULT_BASE = 'http://192.168.10.14:8000'
 let unauthorizedRedirected = false
 
 function errorFrom(value, fallback) {

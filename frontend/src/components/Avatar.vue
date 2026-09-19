@@ -1,13 +1,7 @@
 <template><view class="avatar" :style="containerStyle"><image v-if="src" :src="src" mode="aspectFill" /><text v-else>{{ firstChar }}</text></view></template>
-<script>
-export default {
-  name: 'Avatar',
-  props: { name: String, src: String, size: { type: Number, default: 84 } },
-  computed: {
-    containerStyle() {
-      return { width: this.size + 'rpx', height: this.size + 'rpx', fontSize: this.size * 0.4 + 'rpx' }
-    },
-    firstChar() { return this.name ? this.name.slice(0, 1) : '' }
-  }
-}
+<script setup lang="js">
+import { computed } from 'vue'
+const props = defineProps({ name: { type: String, default: '' }, src: { type: String, default: '' }, size: { type: Number, default: 84 } })
+const containerStyle = computed(() => ({ width: `${props.size}rpx`, height: `${props.size}rpx`, fontSize: `${props.size * .4}rpx` }))
+const firstChar = computed(() => props.name ? props.name.slice(0, 1) : '')
 </script>

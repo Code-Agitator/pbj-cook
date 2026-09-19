@@ -7,6 +7,7 @@
     "build:h5": "uni build",
     "dev:app": "uni --host 0.0.0.0 -p app",
     "build:app": "uni build -p app",
+    "build:mp-weixin": "uni build -p mp-weixin",
     "test": "vitest run"
   },
   "dependencies": {

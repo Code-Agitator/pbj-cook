@@ -1,7 +1,7 @@
 {
   "globalStyle": {
     "navigationStyle": "custom",
-    "backgroundColor": "#f5f8f5",
+    "backgroundColor": "#f7f5f0",
     "backgroundTextStyle": "light"
   },
   "pages": [
@@ -16,6 +16,19 @@
     { "path": "pages/dish-form/index" },
     { "path": "pages/admin/index" }
   ],
+  "tabBar": {
+    "custom": true,
+    "color": "#8a7e66",
+    "selectedColor": "#e8824a",
+    "backgroundColor": "#ebe4d7",
+    "borderStyle": "none",
+    "list": [
+      { "pagePath": "pages/home/index", "text": "首页" },
+      { "pagePath": "pages/meals/index", "text": "饭局" },
+      { "pagePath": "pages/wall/index", "text": "贡献" },
+      { "pagePath": "pages/me/index", "text": "我的" }
+    ]
+  },
   "uni-app-x": {
     "pages": [
       { "path": "pages/home/index" },

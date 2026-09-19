@@ -5,6 +5,7 @@ import {
   cuisineIdFromPicker,
   dishActions,
   heatmapDateKey,
+  ingredientListText,
   localDateKey,
   mealCardData,
   mealInteractionState,
@@ -95,6 +96,21 @@ describe('meal display and flow helpers', () => {
     expect(mealInteractionState({ status: 'ordering', order_deadline: 200, cook_id: 'u1' }, { id: 'u1' }, 100)).toMatchObject({ isCook: true, canCook: true, canOrder: true, canSkip: true, canReview: false })
     expect(mealInteractionState({ status: 'done', order_deadline: 200, cook_id: 'u1' }, { id: 'u1' }, 100)).toMatchObject({ canCook: false, canOrder: false, canSkip: false, canReview: true })
     expect(mealInteractionState({ status: 'ordering', order_deadline: '' }, { id: 'u2' }, 100).canOrder).toBe(false)
+  })
+
+  it('does not couple ordering to cook assignment', () => {
+    const noCook = mealInteractionState({ status: 'ordering', order_deadline: 200, cook_id: null }, { id: 'u2' }, 100)
+    const otherCook = mealInteractionState({ status: 'ordering', order_deadline: 200, cook_id: 'u1' }, { id: 'u2' }, 100)
+    expect(noCook.canOrder).toBe(true)
+    expect(otherCook.canOrder).toBe(true)
+    expect(otherCook.canSkip).toBe(false)
+  })
+
+  it('formats a copyable ingredient list', () => {
+    expect(ingredientListText({ title: '周日晚餐' }, [
+      { name: '鸡蛋', total: 3.5, unit: '个', fragments: [] },
+      { name: '盐', total: null, unit: '', fragments: ['少许'] },
+    ])).toBe('周日晚餐 - 食材清单\n鸡蛋 3.5个\n盐 少许')
   })
 })
 
