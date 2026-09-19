@@ -6,6 +6,8 @@
 .opencode
 .qoder
 .superpowers
+.dsh
+.zcode
 **/node_modules
 **/dist
 **/.idea

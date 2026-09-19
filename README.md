@@ -1,6 +1,6 @@
-# DaCook uni-app
+# PBJCook uni-app
 
-这是 `D:\Work\DaCook` 的 uni-app + FastAPI 复刻版，主要面向微信小程序，同时保留 H5 调试能力。
+这是 `RendaHuang/DaCook` 的 uni-app + FastAPI 复刻版，主要面向微信小程序，同时保留 H5 调试能力。
 
 ## 目录
 

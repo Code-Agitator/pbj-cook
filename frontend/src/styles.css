@@ -55,7 +55,7 @@ page,
   --theme-text-action: var(--palette-amber-500);
   --theme-action-primary: var(--palette-amber-500);
   --theme-action-primary-strong: var(--palette-amber-600);
-  --theme-action-on-primary: var(--palette-hero-900);
+  --theme-action-on-primary: var(--palette-cream-50);
   --theme-border-subtle: var(--palette-line-200);
   --theme-border-strong: var(--palette-amber-500);
   --theme-danger: var(--palette-danger-600);
@@ -84,10 +84,12 @@ page,
     --theme-heat-4: var(--palette-green-750);
     --theme-hero-text-muted: rgba(255, 255, 255, .6);
     --theme-hero-text-subtle: rgba(255, 255, 255, .7);
-    --palette-hero-900: #f6f6f6;
+    --palette-hero-900: #111110;
     --palette-hero-800: #222220;
     --theme-hero-bg: var(--palette-hero-900);
     --theme-hero-surface: var(--palette-hero-800);
+    --palette-cream-50: #faf8f5;
+    --theme-text-on-solid: var(--palette-cream-50);
     --theme-hero-accent: var(--palette-amber-500);
     --theme-action-accent: var(--palette-amber-500);
     --theme-status-accent: var(--palette-amber-500);
@@ -106,10 +108,42 @@ page,
     --radius-feature: 30rpx;
 }
 
+/* #ifndef MP-WEIXIN */
 * {
     box-sizing: border-box;
     letter-spacing: 0;
 }
+/* #endif */
+/* #ifdef MP-WEIXIN */
+page,
+view,
+text,
+image,
+button,
+input,
+textarea,
+scroll-view,
+swiper,
+swiper-item,
+navigator,
+form,
+label,
+picker,
+picker-view,
+cover-view,
+cover-image,
+checkbox,
+radio,
+slider,
+switch,
+video,
+canvas,
+rich-text,
+progress {
+    box-sizing: border-box;
+    letter-spacing: 0;
+}
+/* #endif */
 
 page {
     min-height: 100%;
@@ -127,7 +161,6 @@ page::before {
     inset: 0;
     z-index: 0;
     opacity: 1;
-    background-image: radial-gradient(var(--palette-canvas-texture) 1px, transparent 1.2px);
     background-size: 5px 5px;
     pointer-events: none;
 }
@@ -209,9 +242,20 @@ image {
     justify-content: space-between;
 }
 
+/* #ifndef MP-WEIXIN */
 .row > * + * {
     margin-left: var(--space-2);
 }
+/* #endif */
+/* #ifdef MP-WEIXIN */
+.row > view + view,
+.row > text + text,
+.row > image + image,
+.row > button + button,
+.row > navigator + navigator {
+    margin-left: var(--space-2);
+}
+/* #endif */
 
 .panel, .card {
     background: var(--theme-bg-surface);
@@ -432,6 +476,7 @@ button:focus-visible, input:focus-visible, textarea:focus-visible {
     outline-offset: 3px;
 }
 
+/* #ifndef MP-WEIXIN */
 @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after {
         scroll-behavior: auto !important;
@@ -439,6 +484,7 @@ button:focus-visible, input:focus-visible, textarea:focus-visible {
         animation-duration: .01ms !important;
     }
 }
+/* #endif */
 
 /* uni-app view flex defaults to column, so horizontal layout intent is explicit. */
 .tabbar,

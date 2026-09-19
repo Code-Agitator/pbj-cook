@@ -21,7 +21,6 @@
     "color": "#8a7e66",
     "selectedColor": "#e8824a",
     "backgroundColor": "#ebe4d7",
-    "borderStyle": "none",
     "list": [
       { "pagePath": "pages/home/index", "text": "首页" },
       { "pagePath": "pages/meals/index", "text": "饭局" },

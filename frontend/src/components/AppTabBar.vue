@@ -21,8 +21,8 @@ const tabs = [
   {key: 'wall', label: '贡献', path: '/pages/wall/index', icon: 'Sprout'},
   {key: 'me', label: '我的', path: '/pages/me/index', icon: 'UserRound'}
 ]
-onMounted(async()=>{
-  uni.hideTabBar()
+onMounted(()=>{
+  uni.hideTabBar({ fail: () => {} })
 })
 const slideStyle = computed(() => {
   const index = tabs.findIndex(t => t.key === props.active)

@@ -47,7 +47,7 @@
 
     <view class="filter-meta">
       <text>共 {{ resultCount }} 道</text>
-      <button v-if="hasFilters" class="reset" @tap="emit('reset')">清除筛选</button>
+      <view v-if="hasFilters" class="reset" @tap="emit('reset')">清除筛选</view>
     </view>
   </view>
 </template>

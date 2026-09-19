@@ -171,6 +171,7 @@ button:focus-visible, input:focus-visible, textarea:focus-visible {
   outline-offset: 3px;
 }
 
+/* #ifndef MP-WEIXIN */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: .01ms !important;
@@ -178,4 +179,5 @@ button:focus-visible, input:focus-visible, textarea:focus-visible {
     transition-duration: .01ms !important;
   }
 }
+/* #endif */
 </style>

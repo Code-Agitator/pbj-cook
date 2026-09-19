@@ -209,12 +209,12 @@ onMounted(load); onActivated(load)
   border: 0;
   border-radius: 10rpx;
   background: var(--palette-amber-500);
-  color: var(--palette-hero-900);
+  color: var(--palette-cream-50);
   font-size: 24rpx;
   font-weight: 700;
   line-height: 1;
 }
-.cta text { color: var(--palette-hero-900); }
+.cta text { color: var(--palette-cream-50); }
 
 .footer {
   display: flex;
@@ -282,9 +282,11 @@ onMounted(load); onActivated(load)
 
 @media (hover: hover) { button:hover { filter: brightness(.97); } }
 button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 2px solid var(--palette-amber-500); outline-offset: 3px; }
+/* #ifndef MP-WEIXIN */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; animation-delay: 0s !important; transition-duration: .01ms !important; }
 }
+/* #endif */
 
 .section-title, .cta, .footer, .inline-error, .sheet-head, .types, .time-grid { flex-direction: row; }
 </style>
