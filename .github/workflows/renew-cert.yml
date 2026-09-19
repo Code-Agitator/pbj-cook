@@ -1,4 +1,4 @@
-name: Renew DNS Cert
+name: Renew TLS Certificate
 
 on:
   schedule:
@@ -11,6 +11,8 @@ permissions:
 jobs:
   renew:
     runs-on: ubuntu-latest
+    env:
+      DNS_DOMAIN: ${{ secrets.DNS_DOMAIN }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -20,8 +22,8 @@ jobs:
           CF_Token: ${{ secrets.CF_TOKEN }}
         run: |
           curl -s https://get.acme.sh | sh
-          ~/.acme.sh/acme.sh --issue --dns dns_cf -d dns.inceptae.com --server letsencrypt --force
-          ~/.acme.sh/acme.sh --install-cert -d dns.inceptae.com \
+          ~/.acme.sh/acme.sh --issue --dns dns_cf -d "$DNS_DOMAIN" --server letsencrypt --force
+          ~/.acme.sh/acme.sh --install-cert -d "$DNS_DOMAIN" \
             --key-file /tmp/key.pem --fullchain-file /tmp/cert.pem
 
       - name: Deploy to Aliyun server
@@ -33,7 +35,7 @@ jobs:
           scp -i /tmp/deploy_key -o StrictHostKeyChecking=no \
             /tmp/cert.pem /tmp/key.pem root@$SSH_HOST:/opt/adguard/conf/ssl/
           ssh -i /tmp/deploy_key -o StrictHostKeyChecking=no root@$SSH_HOST \
-            'docker restart adguardhome && sleep 6 && docker ps --filter name=adguardhome --format "{{.Status}}" && openssl s_client -connect 127.0.0.1:853 -servername dns.inceptae.com </dev/null 2>/dev/null | grep "Verify return"'
+            "docker restart adguardhome && sleep 6 && docker ps --filter name=adguardhome --format '{{.Status}}' && openssl s_client -connect 127.0.0.1:853 -servername '$DNS_DOMAIN' </dev/null 2>/dev/null | grep 'Verify return code: 0'"
 
       - name: Generate profile
         run: |
@@ -45,9 +47,9 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           if gh release view profile >/dev/null 2>&1; then
-            gh release upload profile Cowjiang-AdGuard.mobileconfig --clobber
+            gh release upload profile dist/Cowjiang-AdGuard.mobileconfig --clobber
           else
-            gh release create profile Cowjiang-AdGuard.mobileconfig \
+            gh release create profile dist/Cowjiang-AdGuard.mobileconfig \
               --title "Cowjiang AdGuard Profile" \
               --notes "iOS DNS profile (DoT). Install: download the asset in Safari, open it in Files, then install. Rules update daily, no reinstall needed."
           fi

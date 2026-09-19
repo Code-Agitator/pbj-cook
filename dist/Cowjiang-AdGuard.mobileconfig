@@ -17,7 +17,7 @@
 			<key>PayloadDisplayName</key>
 			<string>Cowjiang AdGuard</string>
 			<key>PayloadIdentifier</key>
-			<string>com.apple.dnsSettings.managed.dns.inceptae.dot</string>
+			<string>com.apple.dnsSettings.managed.dns.dot</string>
 			<key>PayloadOrganization</key>
 			<string>Cowjiang</string>
 			<key>PayloadType</key>
@@ -35,7 +35,7 @@
 	<key>PayloadDisplayName</key>
 	<string>Cowjiang AdGuard</string>
 	<key>PayloadIdentifier</key>
-	<string>inceptae.dot.profile</string>
+	<string>cowjiang.dot.profile</string>
 	<key>PayloadOrganization</key>
 	<string>Cowjiang</string>
 	<key>PayloadRemovalDisallowed</key>
