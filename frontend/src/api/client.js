@@ -1,6 +1,6 @@
 import { normalizeApiBase } from '../utils/app'
 
-const DEFAULT_BASE = 'http://192.168.10.14:8000'
+const DEFAULT_BASE = import.meta.env.VITE_API_BASE ?? ''
 let unauthorizedRedirected = false
 
 function errorFrom(value, fallback) {

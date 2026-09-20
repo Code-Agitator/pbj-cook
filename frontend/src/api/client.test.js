@@ -37,7 +37,7 @@ describe('API client server configuration', () => {
     expect(setApiBase('ftp://invalid')).toBe(false)
     expect(storage.get('dacook_api_base')).toBe('http://127.0.0.1:8100')
     storage.set('dacook_api_base', 'not a server')
-    expect(apiBase()).toBe('http://127.0.0.1:8000')
+    expect(apiBase()).toBe('')
   })
 })
 

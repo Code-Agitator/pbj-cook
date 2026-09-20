@@ -16,11 +16,13 @@ from fastapi import Depends, FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
+from starlette.responses import FileResponse
 
-from .database import UPLOAD_DIR, db, init_db, json_load, rows
+from .database import BASE_DIR, UPLOAD_DIR, db, init_db, json_load, rows
 from .ingredients import aggregate_ingredients
 from .security import hash_pin, verify_pin
 from .seed import seed_dev_data
+from .ingredients_seed import seed_ingredients
 
 TZ = ZoneInfo(os.getenv("DACOOK_TIMEZONE", "Asia/Shanghai"))
 NOW = lambda: int(time.time())
@@ -177,6 +179,7 @@ def seed_defaults(conn):
             "INSERT INTO meal_schedules VALUES(?,?,?,?,?,?,?,?,?)",
             (uid(), name, meal_type, 1, dining, lead, deadline, json.dumps(list(range(7))), now),
         )
+    seed_ingredients(conn, now)
 
 
 def tick_schedules():
@@ -226,9 +229,19 @@ async def lifespan(app):
         with db() as conn:
             summary = seed_dev_data(conn, NOW())
             print(f"[seed] Dev test data initialized: {summary}")
+    # 每次启动时确保默认食材数据已就绪（跳过已存在项）
+    with db() as conn:
+        result = seed_ingredients(conn)
+        if result["inserted"] > 0:
+            print(f"[seed] Default ingredients initialized: {result}")
     task = asyncio.create_task(scheduler_loop())
-    yield
-    task.cancel()
+    try:
+        yield
+    except asyncio.CancelledError:
+        # 正常关闭时忽略取消信号
+        pass
+    finally:
+        task.cancel()
 
 
 app = FastAPI(title="DaCook API", version="1.0.0", lifespan=lifespan)
@@ -236,6 +249,7 @@ origins = [x.strip() for x in os.getenv("DACOOK_CORS_ORIGINS", "http://localhost
 app.add_middleware(CORSMiddleware, allow_origins=origins, allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
+FRONTEND_DIR = Path(os.getenv("DACOOK_FRONTEND_DIR", str(BASE_DIR.parent / "frontend" / "dist" / "build" / "h5")))
 
 
 @app.get("/api/health")
@@ -463,6 +477,212 @@ def delete_dish(dish_id: str, me=Depends(auth_dependency)):
             raise HTTPException(403, "无权操作")
         conn.execute("DELETE FROM dishes WHERE id=?", (dish_id,))
     return {"ok": True}
+
+
+# ============================================================
+# 食材统一管理
+# ============================================================
+
+def _ingredient_with_aliases(conn, row):
+    """将 ingredient_canonical 行与它的别名合并输出。"""
+    data = dict(row)
+    data["aliases"] = [
+        dict(a) for a in conn.execute(
+            "SELECT id, alias FROM ingredient_aliases WHERE canonical_id=? ORDER BY created_at",
+            (row["id"],)
+        ).fetchall()
+    ]
+    data["alias_names"] = [a["alias"] for a in data["aliases"]]
+    return data
+
+
+def _search_ingredients(conn, keyword, offset=0, limit=None):
+    """按标准名或别名搜索食材。"""
+    kw = f"%{keyword}%"
+    limit_clause = ""
+    params = [kw, kw]
+    if limit is not None:
+        limit_clause = " LIMIT ? OFFSET ?"
+        params.extend([limit, offset])
+    rows = conn.execute(
+        f"""
+        SELECT DISTINCT c.* FROM ingredient_canonical c
+        LEFT JOIN ingredient_aliases a ON a.canonical_id = c.id
+        WHERE c.name LIKE ? OR a.alias LIKE ?
+        ORDER BY c.name{limit_clause}
+        """,
+        params,
+    ).fetchall()
+    return [_ingredient_with_aliases(conn, r) for r in rows]
+
+
+def _count_ingredients(conn, keyword=None):
+    """统计食材总数或搜索结果数。"""
+    if keyword:
+        kw = f"%{keyword}%"
+        return conn.execute(
+            """
+            SELECT COUNT(DISTINCT c.id) FROM ingredient_canonical c
+            LEFT JOIN ingredient_aliases a ON a.canonical_id = c.id
+            WHERE c.name LIKE ? OR a.alias LIKE ?
+            """,
+            (kw, kw),
+        ).fetchone()[0]
+    return conn.execute("SELECT COUNT(*) FROM ingredient_canonical").fetchone()[0]
+
+
+@app.get("/api/ingredients")
+def ingredient_list(
+    q: str = "",
+    page: int = 1,
+    page_size: int = 50,
+    me=Depends(admin_dependency),
+):
+    """获取食材列表，支持分页和搜索。
+
+    返回格式: { items: [...], total: N, page: N, page_size: N }
+    """
+    with db() as conn:
+        page = max(1, page)
+        page_size = min(max(1, page_size), 200)
+        offset = (page - 1) * page_size
+        keyword = q.strip()
+
+        if keyword:
+            total = _count_ingredients(conn, keyword)
+            items = _search_ingredients(conn, keyword, offset, page_size)
+        else:
+            total = _count_ingredients(conn)
+            rows = conn.execute(
+                "SELECT * FROM ingredient_canonical ORDER BY name LIMIT ? OFFSET ?",
+                (page_size, offset),
+            ).fetchall()
+            items = [_ingredient_with_aliases(conn, r) for r in rows]
+
+        return {
+            "items": items,
+            "total": total,
+            "page": page,
+            "page_size": page_size,
+        }
+
+
+@app.get("/api/ingredients/{ingredient_id}")
+def ingredient_get(ingredient_id: str, me=Depends(admin_dependency)):
+    with db() as conn:
+        row = conn.execute("SELECT * FROM ingredient_canonical WHERE id=?", (ingredient_id,)).fetchone()
+        if not row:
+            raise HTTPException(404, "食材不存在")
+        return _ingredient_with_aliases(conn, row)
+
+
+@app.post("/api/ingredients")
+def ingredient_create(payload: dict, me=Depends(admin_dependency)):
+    name = str(payload.get("name", "")).strip()
+    if not name:
+        raise HTTPException(422, "请填写食材名称")
+    aliases = payload.get("aliases") or []
+    if not isinstance(aliases, list):
+        raise HTTPException(422, "别名格式不正确")
+    clean_aliases = [a.strip() for a in aliases if isinstance(a, str) and a.strip() and a.strip() != name]
+    clean_aliases = list(dict.fromkeys(clean_aliases))[:20]  # 去重并限制数量
+    with db() as conn:
+        # 检查名称是否已存在（标准名或别名）
+        existing = conn.execute(
+            "SELECT c.id, c.name FROM ingredient_canonical c WHERE c.name = ? UNION ALL SELECT c.id, c.name FROM ingredient_aliases a JOIN ingredient_canonical c ON c.id = a.canonical_id WHERE a.alias = ?",
+            (name, name),
+        ).fetchone()
+        if existing:
+            raise HTTPException(409, f"食材名称已存在（{existing['name']}）")
+        ingredient_id = uid()
+        conn.execute(
+            "INSERT INTO ingredient_canonical(id, name, created_at) VALUES(?, ?, ?)",
+            (ingredient_id, name, NOW()),
+        )
+        for a in clean_aliases:
+            conn.execute(
+                "INSERT INTO ingredient_aliases(id, canonical_id, alias, created_at) VALUES(?, ?, ?, ?)",
+                (uid(), ingredient_id, a, NOW()),
+            )
+        return _ingredient_with_aliases(conn, conn.execute("SELECT * FROM ingredient_canonical WHERE id=?", (ingredient_id,)).fetchone())
+
+
+@app.put("/api/ingredients/{ingredient_id}")
+def ingredient_update(ingredient_id: str, payload: dict, me=Depends(admin_dependency)):
+    name = str(payload.get("name", "")).strip()
+    if not name:
+        raise HTTPException(422, "请填写食材名称")
+    aliases = payload.get("aliases") or []
+    if not isinstance(aliases, list):
+        raise HTTPException(422, "别名格式不正确")
+    clean_aliases = [a.strip() for a in aliases if isinstance(a, str) and a.strip() and a.strip() != name]
+    clean_aliases = list(dict.fromkeys(clean_aliases))[:20]
+    with db() as conn:
+        row = conn.execute("SELECT * FROM ingredient_canonical WHERE id=?", (ingredient_id,)).fetchone()
+        if not row:
+            raise HTTPException(404, "食材不存在")
+        if name != row["name"]:
+            existing = conn.execute(
+                "SELECT c.id FROM ingredient_canonical c WHERE c.name = ? AND c.id != ? UNION ALL SELECT c.id FROM ingredient_aliases a JOIN ingredient_canonical c ON c.id = a.canonical_id WHERE a.alias = ? AND c.id != ?",
+                (name, ingredient_id, name, ingredient_id),
+            ).fetchone()
+            if existing:
+                raise HTTPException(409, "食材名称已存在")
+        conn.execute("UPDATE ingredient_canonical SET name=? WHERE id=?", (name, ingredient_id))
+        # 重新设置别名：删旧增新
+        conn.execute("DELETE FROM ingredient_aliases WHERE canonical_id=?", (ingredient_id,))
+        for a in clean_aliases:
+            conn.execute(
+                "INSERT INTO ingredient_aliases(id, canonical_id, alias, created_at) VALUES(?, ?, ?, ?)",
+                (uid(), ingredient_id, a, NOW()),
+            )
+        return _ingredient_with_aliases(conn, conn.execute("SELECT * FROM ingredient_canonical WHERE id=?", (ingredient_id,)).fetchone())
+
+
+@app.delete("/api/ingredients/{ingredient_id}")
+def ingredient_delete(ingredient_id: str, me=Depends(admin_dependency)):
+    with db() as conn:
+        row = conn.execute("SELECT * FROM ingredient_canonical WHERE id=?", (ingredient_id,)).fetchone()
+        if not row:
+            raise HTTPException(404, "食材不存在")
+        conn.execute("DELETE FROM ingredient_canonical WHERE id=?", (ingredient_id,))
+    return {"ok": True}
+
+
+@app.post("/api/ingredients/{ingredient_id}/merge")
+def ingredient_merge(ingredient_id: str, payload: dict, me=Depends(admin_dependency)):
+    """将其他食材的别名合并到目标食材中，然后删除源食材。"""
+    source_id = str(payload.get("source_id", "")).strip()
+    if not source_id:
+        raise HTTPException(422, "请选择要合并的源食材")
+    if source_id == ingredient_id:
+        raise HTTPException(422, "不能合并自身")
+    with db() as conn:
+        target = conn.execute("SELECT * FROM ingredient_canonical WHERE id=?", (ingredient_id,)).fetchone()
+        if not target:
+            raise HTTPException(404, "目标食材不存在")
+        source = conn.execute("SELECT * FROM ingredient_canonical WHERE id=?", (source_id,)).fetchone()
+        if not source:
+            raise HTTPException(404, "源食材不存在")
+        # 把源的所有别名转移到目标
+        source_aliases = conn.execute("SELECT alias FROM ingredient_aliases WHERE canonical_id=?", (source_id,)).fetchall()
+        for a in source_aliases:
+            existing = conn.execute("SELECT id FROM ingredient_aliases WHERE canonical_id=? AND alias=?", (ingredient_id, a["alias"])).fetchone()
+            if not existing:
+                conn.execute(
+                    "INSERT INTO ingredient_aliases(id, canonical_id, alias, created_at) VALUES(?, ?, ?, ?)",
+                    (uid(), ingredient_id, a["alias"], NOW()),
+                )
+        # 把源的标准名也作为目标的别名
+        existing = conn.execute("SELECT id FROM ingredient_aliases WHERE canonical_id=? AND alias=?", (ingredient_id, source["name"])).fetchone()
+        if not existing:
+            conn.execute(
+                "INSERT INTO ingredient_aliases(id, canonical_id, alias, created_at) VALUES(?, ?, ?, ?)",
+                (uid(), ingredient_id, source["name"], NOW()),
+            )
+        # 删除源
+        conn.execute("DELETE FROM ingredient_canonical WHERE id=?", (source_id,))
+        return _ingredient_with_aliases(conn, target)
 
 
 def meal_summary(conn, row):
@@ -710,3 +930,14 @@ def remove_member(user_id: str, me=Depends(admin_dependency)):
     with db() as conn:
         conn.execute("DELETE FROM users WHERE id=?", (user_id,))
     return {"ok": True}
+
+
+if FRONTEND_DIR.exists():
+    app.mount("/assets", StaticFiles(directory=FRONTEND_DIR / "assets"), name="frontend-assets")
+
+    @app.get("/{full_path:path}")
+    async def serve_spa(full_path: str):
+        file_path = FRONTEND_DIR / full_path
+        if file_path.is_file():
+            return FileResponse(file_path)
+        return FileResponse(FRONTEND_DIR / "index.html")
