@@ -28,6 +28,14 @@
           </view>
           <Icon icon="ChevronRight" :size="17" />
         </view>
+        <view class="menu-row" @tap="goIngredients">
+          <view class="menu-icon"><Icon icon="Sprout" :size="19" /></view>
+          <view class="menu-copy">
+            <text>食材管理</text>
+            <text class="menu-sub">统一食材名称与别名</text>
+          </view>
+          <Icon icon="ChevronRight" :size="17" />
+        </view>
         <view class="menu-row" @tap="goAdmin">
           <view class="menu-icon"><Icon icon="Settings" :size="19" /></view>
           <view class="menu-copy">
@@ -112,6 +120,7 @@ async function load() {
 }
 function goAdmin() { if (me.value?.is_admin) uni.navigateTo({ url: '/pages/admin/index' }) }
 function goDishes() { if (me.value?.is_admin) uni.navigateTo({ url: '/pages/dishes/index' }) }
+function goIngredients() { if (me.value?.is_admin) uni.navigateTo({ url: '/pages/ingredients/index' }) }
 function openProfile() { 
   const saved = me.value || {}; 
   profile.name = saved.name || ''; 
@@ -195,8 +204,8 @@ onActivated(load)
   align-items: center;
   gap: 28rpx;
   width: calc(100% - 40rpx);
-  margin: 24rpx 20rpx 0;
-  padding: 36rpx 40rpx;
+  margin: 24rpx 0;
+  padding: 36rpx;
   background: var(--theme-bg-surface);
   border: 1px solid var(--theme-border-subtle);
   border-radius: 44rpx;
@@ -241,7 +250,7 @@ onActivated(load)
 
 /* 分组菜单 */
 .menu-section {
-  margin: 28rpx 20rpx 0;
+  margin: 28rpx 0;
 }
 .menu-heading {
   display: block;

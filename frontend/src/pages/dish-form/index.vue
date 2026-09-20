@@ -90,7 +90,11 @@
         </view>
         <view id="ingRows">
           <view v-for="(item, idx) in form.ingredients" :key="item.key" class="ing-row">
-            <input v-model="item.name" type="text" placeholder="食材" class="input" aria-label="食材名称"/>
+            <IngredientAutocomplete
+              v-model="item.name"
+              placeholder="食材"
+              @select="onIngredientSelect(item, $event)"
+            />
             <input v-model="item.quantity" type="text" placeholder="用量" class="input" aria-label="用量"/>
             <input v-model="item.unit" type="text" placeholder="单位" class="input" aria-label="单位"/>
             <view class="row-remove" @tap="removeIngredient(item.key)" :class="{ hidden: form.ingredients.length <= 1 }">
@@ -148,6 +152,7 @@
 import {computed, onMounted, reactive, ref} from 'vue'
 import BackButton from '../../components/BackButton.vue'
 import Icon from '../../components/Icons.vue'
+import IngredientAutocomplete from '../../components/IngredientAutocomplete.vue'
 import {assetUrl, currentUser, request, run, uploadImage} from '../../api/client'
 import {cuisineIdFromPicker, normalizeDishDraft} from '../../utils/app'
 
@@ -268,6 +273,12 @@ function addIngredient() {
 function removeIngredient(key) {
   if (form.ingredients.length <= 1) return
   form.ingredients = form.ingredients.filter(item => item.key !== key)
+}
+
+// 食材选中回调 - 可自动填充常见单位
+function onIngredientSelect(ingredientItem, selected) {
+  // 可以在这里添加自动填充逻辑，比如根据食材推荐常用单位
+  // 目前保留选中即可，name 已通过 v-model 更新
 }
 
 function addStep() {

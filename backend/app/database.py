@@ -107,6 +107,15 @@ CREATE TABLE IF NOT EXISTS reviews (
 CREATE INDEX IF NOT EXISTS idx_meals_date ON meals(date);
 CREATE INDEX IF NOT EXISTS idx_orders_meal ON orders(meal_id);
 CREATE INDEX IF NOT EXISTS idx_dishes_status ON dishes(status);
+CREATE TABLE IF NOT EXISTS ingredient_canonical (
+  id TEXT PRIMARY KEY, name TEXT NOT NULL UNIQUE, created_at INTEGER NOT NULL
+);
+CREATE TABLE IF NOT EXISTS ingredient_aliases (
+  id TEXT PRIMARY KEY, canonical_id TEXT NOT NULL REFERENCES ingredient_canonical(id) ON DELETE CASCADE,
+  alias TEXT NOT NULL, created_at INTEGER NOT NULL, UNIQUE(canonical_id, alias)
+);
+CREATE INDEX IF NOT EXISTS idx_ingredient_aliases_canonical ON ingredient_aliases(canonical_id);
+CREATE INDEX IF NOT EXISTS idx_ingredient_aliases_alias ON ingredient_aliases(alias);
 """
 
 
