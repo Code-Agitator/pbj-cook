@@ -1,8 +1,95 @@
-<template><view class="page no-tab auth-page"><view class="auth-mark">宴</view><text class="title">建立家庭饭桌</text><text class="subtle intro">{{step===1?'先设置家庭名称和你的昵称':'设置 6 位数字密码'}}</text><view v-if="step===1" class="auth-form"><view class="form-group"><text class="label">家庭名称</text><input v-model="familyName" class="input" maxlength="20" placeholder="例如：幸福一家"/></view><view class="form-group"><text class="label">你的昵称</text><input v-model="name" class="input" maxlength="12" placeholder="怎么称呼你"/></view><button class="btn block" :disabled="submitting" @tap="next">下一步</button></view><view v-else class="auth-form pin-form"><PinPad v-model="pin" :disabled="submitting" @complete="submit"/><button class="btn ghost block" :disabled="submitting" @tap="step=1;pin=''">返回修改资料</button></view></view></template>
+<template>
+  <view class="page no-tab auth-page">
+    <view class="auth-mark">宴</view>
+    <text class="title">建立家庭饭桌</text>
+    <text class="subtle intro">{{ step === 1 ? '先设置家庭名称和你的昵称' : '设置 6 位数字密码' }}</text>
+    <view v-if="step===1" class="auth-form">
+      <view class="form-group">
+        <text class="label">家庭名称</text>
+        <input v-model="familyName" class="input" maxlength="20" placeholder="例如：幸福一家"/></view>
+      <view class="form-group">
+        <text class="label">你的昵称</text>
+        <input v-model="name" class="input" maxlength="12" placeholder="怎么称呼你"/></view>
+      <view class="btn block" :class="{ disabled: submitting }" @tap="next">下一步</view>
+    </view>
+    <view v-else class="auth-form pin-form">
+      <PinPad v-model="pin" :disabled="submitting" @complete="submit"/>
+      <view class="btn ghost block" :class="{ disabled: submitting }" @tap="step=1;pin=''">返回修改资料</view>
+    </view>
+  </view>
+</template>
 <script setup lang="js">
-import { ref } from 'vue';import PinPad from '../../components/PinPad.vue';import {request,run,setSession} from '../../api/client'
-const step=ref(1),familyName=ref(''),name=ref(''),pin=ref(''),submitting=ref(false)
-function next(){familyName.value=familyName.value.trim();name.value=name.value.trim();if(!familyName.value)return uni.showToast({title:'请填写家庭名称',icon:'none'});if(!name.value)return uni.showToast({title:'请填写昵称',icon:'none'});step.value=2}
-async function submit(value){if(submitting.value)return;submitting.value=true;try{const data=await run(()=>request('/api/auth/setup',{method:'POST',data:{family_name:familyName.value,name:name.value,pin:value}}));setSession(data);uni.reLaunch({url:'/pages/home/index'})}catch{pin.value=''}finally{submitting.value=false}}
+import {ref} from 'vue';
+import PinPad from '../../components/PinPad.vue';
+import {request, run, setSession} from '../../api/client'
+
+const step = ref(1), familyName = ref(''), name = ref(''), pin = ref(''), submitting = ref(false)
+
+function next() {
+  familyName.value = familyName.value.trim();
+  name.value = name.value.trim();
+  if (!familyName.value) return uni.showToast({title: '请填写家庭名称', icon: 'none'});
+  if (!name.value) return uni.showToast({title: '请填写昵称', icon: 'none'});
+  step.value = 2
+}
+
+async function submit(value) {
+  if (submitting.value) return;
+  submitting.value = true;
+  try {
+    const data = await run(() => request('/api/auth/setup', {
+      method: 'POST',
+      data: {family_name: familyName.value, name: name.value, pin: value}
+    }));
+    setSession(data);
+    uni.reLaunch({url: '/pages/home/index'})
+  } catch {
+    pin.value = ''
+  } finally {
+    submitting.value = false
+  }
+}
 </script>
-<style scoped>.auth-page{display:flex;padding-top:150rpx;align-items:center;flex-direction:column}.auth-mark{display:flex;width:124rpx;height:124rpx;margin-bottom:30rpx;align-items:center;justify-content:center;border:1px solid var(--theme-border-subtle);border-radius:18rpx;background:var(--theme-bg-surface);color:var(--theme-text-action);font-family:"Songti SC","STSong","Noto Serif CJK SC",serif;font-size:50rpx}.intro{margin:12rpx 0 46rpx}.auth-form{width:100%;max-width:560rpx}.pin-form{display:flex;align-items:center;flex-direction:column}</style>
+<style scoped>.auth-page {
+  display: flex;
+  padding-top: 150rpx;
+  align-items: center;
+  flex-direction: column
+}
+
+.auth-mark {
+  display: flex;
+  width: 124rpx;
+  height: 124rpx;
+  margin-bottom: 30rpx;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--theme-border-subtle);
+  border-radius: 18rpx;
+  background: var(--theme-bg-surface);
+  color: var(--theme-text-action);
+  font-family: "Songti SC", "STSong", "Noto Serif CJK SC", serif;
+  font-size: 50rpx
+}
+
+.intro {
+  margin: 12rpx 0 46rpx
+}
+
+.auth-form {
+  width: 100%;
+  max-width: 560rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center
+}
+
+.form-group {
+  width: 100%
+}
+
+.pin-form {
+  display: flex;
+  align-items: center;
+  flex-direction: column
+}</style>

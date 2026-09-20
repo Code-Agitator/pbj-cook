@@ -119,7 +119,6 @@ page,
 view,
 text,
 image,
-button,
 input,
 textarea,
 scroll-view,
@@ -165,14 +164,11 @@ page::before {
     pointer-events: none;
 }
 
-button::after {
-    border: 0;
-}
-
-button {
+.btn {
     font: inherit;
     letter-spacing: 0;
     cursor: pointer;
+    border: 0;
 }
 
 image {
@@ -182,7 +178,7 @@ image {
 .page {
     width: 100%;
     min-height: 100%;
-    padding: calc(var(--status-bar-height, 24px) + var(--space-5)) 24rpx calc(140rpx + env(safe-area-inset-bottom));
+    padding: calc(var(--status-bar-height, 24px) + var(--space-5)) var(--space-5) calc(140rpx + env(safe-area-inset-bottom));
 }
 
 .page.no-tab {
@@ -251,7 +247,6 @@ image {
 .row > view + view,
 .row > text + text,
 .row > image + image,
-.row > button + button,
 .row > navigator + navigator {
     margin-left: var(--space-2);
 }
@@ -278,32 +273,66 @@ image {
     padding: 0 var(--space-5);
     align-items: center;
     justify-content: center;
-    border-radius: var(--radius-control);
+    border-radius: 16rpx;
     background: var(--theme-action-primary);
     color: var(--theme-action-on-primary);
     font-size: 27rpx;
     font-weight: 600;
     line-height: 1;
+    align-self: center;
+    box-shadow: 0 2px 8rpx rgba(25, 34, 28, 0.12), 0 1px 2rpx rgba(25, 34, 28, 0.08);
+    transition: transform 0.1s ease, box-shadow 0.1s ease, filter 0.15s ease;
+    position: relative;
 }
 
-.btn[disabled] {
+.btn::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: linear-gradient(to bottom, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0) 45%);
+    pointer-events: none;
+}
+
+.btn.disabled {
     opacity: .48;
+    pointer-events: none;
+    box-shadow: none;
+}
+
+.btn.disabled::after {
+    display: none;
 }
 
 .btn.tonal {
     border: 1px solid var(--theme-border-subtle);
     background: var(--theme-bg-surface);
     color: var(--theme-text-action);
+    box-shadow: 0 2px 6rpx rgba(25, 34, 28, 0.08), 0 1px 2rpx rgba(25, 34, 28, 0.06);
+}
+
+.btn.tonal::after {
+    background: linear-gradient(to bottom, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0) 50%);
 }
 
 .btn.ghost {
     background: transparent;
     color: var(--theme-text-secondary);
+    box-shadow: none;
+}
+
+.btn.ghost::after {
+    display: none;
 }
 
 .btn.danger {
     background: var(--theme-danger-subtle);
     color: var(--theme-danger);
+    box-shadow: 0 2px 6rpx rgba(181, 71, 71, 0.12), 0 1px 2rpx rgba(181, 71, 71, 0.08);
+}
+
+.btn.danger::after {
+    background: linear-gradient(to bottom, rgba(255, 255, 255, 0.22) 0%, rgba(255, 255, 255, 0) 45%);
 }
 
 .btn.block {
@@ -342,16 +371,48 @@ textarea.input {
     justify-content: center;
     border: 1px solid var(--theme-border-subtle);
     border-radius: 8rpx;
-    background: transparent;
+    background: var(--theme-bg-surface);
     color: var(--theme-text-tertiary);
     font-size: 22rpx;
     font-weight: bold;
+    box-shadow: 0 1px 4rpx rgba(25, 34, 28, 0.06);
+    transition: transform 0.1s ease, box-shadow 0.1s ease;
+    position: relative;
+}
+
+.chip::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: linear-gradient(to bottom, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0) 50%);
+    pointer-events: none;
 }
 
 .chip.on {
     border-color: var(--theme-action-primary);
     background: var(--theme-action-primary);
     color: var(--theme-action-on-primary);
+    box-shadow: 0 2px 6rpx rgba(232, 130, 74, 0.18);
+}
+
+.chip.on::after {
+    background: linear-gradient(to bottom, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0) 45%);
+}
+
+.chip:active {
+    transform: translateY(1rpx);
+    box-shadow: 0 1px 2rpx rgba(25, 34, 28, 0.06);
+}
+
+.chip.disabled {
+    opacity: .48;
+    pointer-events: none;
+    box-shadow: none;
+}
+
+.chip.disabled::after {
+    display: none;
 }
 
 .badge {
@@ -373,7 +434,7 @@ textarea.input {
     border-color: var(--palette-amber-500);
     color: var(--palette-amber-500);
 }
-.empty-line button {
+.empty-line .btn {
     color: var(--palette-amber-500);
 }
 
@@ -404,6 +465,13 @@ textarea.input {
 
 .form-group {
     margin-bottom: var(--space-5);
+}
+
+.section-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    padding: var(--space-5) 0;
 }
 
 .grid-2 {
@@ -466,12 +534,22 @@ textarea.input {
 }
 
 @media (hover: hover) {
-    button:hover {
-        filter: brightness(.98);
+    .btn:hover {
+        filter: brightness(.96);
+        box-shadow: 0 3px 10rpx rgba(25, 34, 28, 0.14), 0 1px 3rpx rgba(25, 34, 28, 0.1);
     }
 }
 
-button:focus-visible, input:focus-visible, textarea:focus-visible {
+.btn:active {
+    transform: translateY(2rpx);
+    box-shadow: 0 1px 3rpx rgba(25, 34, 28, 0.1), 0 1px 1rpx rgba(25, 34, 28, 0.06);
+}
+
+.btn:active::after {
+    background: linear-gradient(to bottom, rgba(0, 0, 0, 0.08) 0%, rgba(0, 0, 0, 0) 45%);
+}
+
+.btn:focus-visible, input:focus-visible, textarea:focus-visible {
     outline: 2px solid var(--theme-focus-ring);
     outline-offset: 3px;
 }

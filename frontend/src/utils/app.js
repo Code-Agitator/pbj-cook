@@ -71,7 +71,9 @@ export function formatMealTime(value) {
 
   const date = new Date(timestamp * 1000)
   if (Number.isNaN(date.getTime())) return '时间待定'
-  return date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', hour12: false })
+  const hours = String(date.getUTCHours()).padStart(2, '0')
+  const minutes = String(date.getUTCMinutes()).padStart(2, '0')
+  return `${hours}:${minutes}`
 }
 
 export function mealDateLabel(meal, now = new Date()) {
@@ -85,7 +87,8 @@ export function mealDateLabel(meal, now = new Date()) {
   if (timestamp === null) return '日期待定'
   const fallback = new Date(timestamp * 1000)
   if (Number.isNaN(fallback.getTime())) return '日期待定'
-  return localDateKey(fallback) === localDateKey(now) ? '今天' : `${fallback.getMonth() + 1}月${fallback.getDate()}日`
+  const fallbackKey = `${String(fallback.getUTCFullYear()).padStart(4, '0')}-${String(fallback.getUTCMonth() + 1).padStart(2, '0')}-${String(fallback.getUTCDate()).padStart(2, '0')}`
+  return fallbackKey === localDateKey(now) ? '今天' : `${fallback.getUTCMonth() + 1}月${fallback.getUTCDate()}日`
 }
 
 export function mealCardData(meal, now = new Date()) {
@@ -112,12 +115,12 @@ export function mealInteractionState(meal, user, nowSeconds = Date.now() / 1000)
 
   return {
     isCook,
-    canCook: actionable,
+    canCook: actionable && !meal?.cook_id,
     canOrder: status === 'ordering' && deadline !== null && nowSeconds < deadline,
     canManage,
     canStartCooking: canManage && status === 'ordering',
     canComplete: canManage && status === 'cooking',
-    canCancel: canManage,
+    canCancel: canManage && Boolean(user?.is_admin),
     canSkip: isCook && actionable,
     canReview: status === 'done',
   }

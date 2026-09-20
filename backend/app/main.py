@@ -508,13 +508,11 @@ def get_meal(meal_id: str, me=Depends(auth_dependency)):
 
 
 @app.get("/api/meals/{meal_id}/ingredient-list")
-def meal_ingredient_list(meal_id: str, me=Depends(auth_dependency)):
+def meal_ingredient_list(meal_id: str):
     with db() as conn:
-        meal = conn.execute("SELECT id,cook_id FROM meals WHERE id=?", (meal_id,)).fetchone()
+        meal = conn.execute("SELECT id FROM meals WHERE id=?", (meal_id,)).fetchone()
         if not meal:
             raise HTTPException(404, "饭局不存在")
-        if meal["cook_id"] != me["id"]:
-            raise HTTPException(403, "仅掌勺人可查看食材清单")
         ingredient_rows = rows(conn.execute(
             """
             SELECT i.name,i.quantity,i.unit
@@ -541,7 +539,12 @@ def toggle_cook(meal_id: str, me=Depends(auth_dependency)):
             raise HTTPException(404, "饭局不存在")
         if meal["status"] not in ("ordering", "cooking"):
             raise HTTPException(409, "当前状态不能认领掌勺")
-        conn.execute("UPDATE meals SET cook_id=? WHERE id=?", (None if meal["cook_id"] == me["id"] else me["id"], meal_id))
+        if meal["cook_id"] == me["id"]:
+            conn.execute("UPDATE meals SET cook_id=? WHERE id=?", (None, meal_id))
+        elif meal["cook_id"] is None:
+            conn.execute("UPDATE meals SET cook_id=? WHERE id=?", (me["id"], meal_id))
+        else:
+            raise HTTPException(409, "已有主厨，需等当前主厨退出后才能认领")
     return {"ok": True}
 
 
@@ -584,7 +587,10 @@ def update_meal_status(meal_id: str, payload: dict, me=Depends(auth_dependency))
         meal = conn.execute("SELECT * FROM meals WHERE id=?", (meal_id,)).fetchone()
         if not meal:
             raise HTTPException(404, "饭局不存在")
-        if not me["is_admin"] and me["id"] not in (meal["created_by"], meal["cook_id"]):
+        if status == "cancelled":
+            if not me["is_admin"]:
+                raise HTTPException(403, "仅管理员可取消饭局")
+        elif not me["is_admin"] and me["id"] not in (meal["created_by"], meal["cook_id"]):
             raise HTTPException(403, "仅创建者、掌勺人或管理员可操作")
         allowed = {
             "ordering": {"cooking", "cancelled"},

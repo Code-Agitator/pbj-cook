@@ -54,6 +54,6 @@ export function groupMealOrders(orders) {
   ))
 }
 
-export function mealDetailInitialTab({ canOrder, isCook }) {
-  return canOrder && !isCook ? 'pick' : 'ordered'
+export function mealDetailInitialTab({ canOrder }) {
+  return canOrder ? 'pick' : 'ordered'
 }

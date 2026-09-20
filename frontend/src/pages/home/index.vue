@@ -1,292 +1,474 @@
 <template>
   <view class="page">
-    <view class="hero">
-      <text class="family">{{ settings.family_name || '我们的家' }}</text>
-      <h1 class="greeting">你好，{{ me?.name || '家人' }}</h1>
+    <!-- 顶部问候 -->
+    <header class="top">
+      <view class="avatar" aria-hidden="true">{{ (me?.name || '家').charAt(0) }}</view>
+      <view class="top-text">
+        <text class="family">{{ settings.family_name || '我们的家' }}</text>
+        <h1 class="greet">你好，{{ me?.name || '家人' }}</h1>
+      </view>
+    </header>
+    <view class="prompt-row">
+      <text class="date-chip">{{ dateLabel }}</text>
       <text class="prompt">今天想吃点什么？</text>
-      <div class="amber-accent"></div>
     </view>
 
-    <text class="section-title">临近的饭局</text>
+    <!-- 下一顿聚光大卡 - 使用 MealCard 组件 -->
+    <MealCard v-if="spotlightMeal" variant="spotlight" :meal="spotlightMeal" @open="openMeal"/>
 
+    <!-- 接下来：饭局列表（使用 MealList 组件） -->
+    <MealList :meals="agendaMeals" title="接下来" @open="openMeal"/>
+
+    <!-- 空状态 -->
+    <view v-if="!spotlightMeal && !agendaMeals.length && !loading" class="empty-state">
+      <text>{{ error || '还没有临近的饭局' }}</text>
+      <view v-if="error" class="btn tonal retry" @tap="load">重试</view>
+    </view>
     <view v-if="loading && !formattedUpcoming.length" class="state">正在加载饭局...</view>
-    <view v-else-if="error && !formattedUpcoming.length" class="state panel">
-      <text>{{ error }}</text>
-      <button class="btn tonal" @tap="load">重试</button>
-    </view>
-    <view v-else-if="!formattedUpcoming.length" class="state empty-line">
-      <text>还没有临近的饭局</text>
-      <button @tap="showCreate = true">现在开一场</button>
-    </view>
 
-    <view v-else class="meal-list">
-      <MealCard v-for="item in formattedUpcoming" :key="item.id" :meal="item" @open="openMeal" />
+    <!-- 主操作按钮 -->
+    <view class="cta" @tap="showCreate = true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"
+           aria-hidden="true" class="cta-icon">
+        <path d="M12 5v14M5 12h14"/>
+      </svg>
+      <text>开饭局</text>
     </view>
 
-    <button v-if="formattedUpcoming.length" class="cta" @tap="showCreate = true"><Icon icon="Plus" :size="16" /><text>开饭局</text></button>
-
-    <view v-if="formattedUpcoming.length" class="footer">
+    <!-- 底部链接 -->
+    <view class="foot">
       <text @tap="goMeals">查看全部饭局</text>
       <text>{{ currentMonth }}月</text>
     </view>
 
+    <!-- 错误提示 -->
     <view v-if="error && formattedUpcoming.length" class="inline-error">
       <text>{{ error }}</text>
-      <button @tap="load">重试</button>
+      <text @tap="load">重试</text>
     </view>
 
-    <AppTabBar active="home" />
+    <AppTabBar active="home"/>
 
-    <view v-if="showCreate" class="modal-mask" @tap.self="closeCreate">
-      <view class="sheet create-sheet">
-        <view class="sheet-head">
-          <view><text class="section-title">开饭局</text><text class="subtle">点菜和主厨认领会在饭局中分别进行</text></view>
-          <button class="close" @tap="closeCreate"><Icon icon="X" :size="18" /></button>
+    <!-- 开饭局面板 -->
+    <BottomSheet v-model="showCreate" @close="closeCreate">
+      <view class="sheet-head">
+        <view>
+          <text class="sheet-title">开饭局</text>
+          <text class="sheet-subtitle">点菜和主厨认领会在饭局中分别进行</text>
         </view>
-        <view class="types">
-          <button v-for="(label, key) in types" :key="key" class="chip" :class="{ on: form.meal_type === key }" @tap="form.meal_type = key">{{ label }}</button>
+      </view>
+      <view class="chips">
+        <view v-for="(label, key) in types" :key="key" class="chip" :class="{ on: form.meal_type === key }"
+              @tap="form.meal_type = key">{{ label }}
         </view>
-        <view class="form-group">
-          <text class="label">标题（可选）</text>
-          <input v-model="form.title" class="input" placeholder="例如：周末聚餐" />
-        </view>
-        <view class="time-grid">
-          <view>
-            <text class="label">日期</text>
-            <picker mode="date" :value="form.date" @change="form.date = $event.detail.value">
-              <view class="input picker">{{ form.date }}</view>
-            </picker>
-          </view>
-          <view>
-            <text class="label">用餐时间</text>
-            <picker mode="time" :value="form.dining_time" @change="form.dining_time = $event.detail.value">
-              <view class="input picker">{{ form.dining_time }}</view>
-            </picker>
-          </view>
-        </view>
-        <view class="form-group deadline">
-          <text class="label">点菜截止</text>
-          <picker mode="time" :value="form.deadline" @change="form.deadline = $event.detail.value">
-            <view class="input picker">{{ form.deadline }}</view>
+      </view>
+      <view class="field">
+        <text class="label">标题（可选）</text>
+        <input v-model="form.title" class="input" placeholder="例如：周末聚餐"/>
+      </view>
+      <view class="grid2">
+        <view class="field">
+          <text class="label">日期</text>
+          <picker mode="date" :value="form.date" @change="form.date = $event.detail.value">
+            <view class="input picker">{{ form.date }}</view>
           </picker>
         </view>
-        <button class="btn block" :disabled="createPending" @tap="create">
-          {{ createPending ? '创建中...' : '确认开饭局' }}
-        </button>
+        <view class="field">
+          <text class="label">用餐时间</text>
+          <picker mode="time" :value="form.dining_time" @change="form.dining_time = $event.detail.value">
+            <view class="input picker">{{ form.dining_time }}</view>
+          </picker>
+        </view>
       </view>
-    </view>
+      <view class="field">
+        <text class="label">点菜截止</text>
+        <picker mode="time" :value="form.deadline" @change="form.deadline = $event.detail.value">
+          <view class="input picker">{{ form.deadline }}</view>
+        </picker>
+      </view>
+      <view class="cta sheet-cta" @tap="create">
+        <text>确认开饭局</text>
+      </view>
+    </BottomSheet>
   </view>
 </template>
 
 <script setup lang="js">
-import { computed, onActivated, onMounted, reactive, ref } from 'vue'
-import Icon from '../../components/Icons.vue'
+import {computed, onActivated, onMounted, reactive, ref} from 'vue'
 import AppTabBar from '../../components/AppTabBar.vue'
+import BottomSheet from '../../components/BottomSheet.vue'
 import MealCard from '../../components/MealCard.vue'
-import { bootstrap, currentUser, request, run } from '../../api/client'
-import { localDateKey, sortMealsByDiningTime, validateMealDraft } from '../../utils/app'
+import MealList from '../../components/MealList.vue'
+import {bootstrap, currentUser, request, run} from '../../api/client'
+import {localDateKey, sortMealsByDiningTime, validateMealDraft} from '../../utils/app'
 
 const settings = ref({}), me = ref(currentUser()), showCreate = ref(false)
 const loading = ref(false), error = ref(''), createPending = ref(false)
-const types = { breakfast: '早餐', lunch: '午餐', dinner: '晚餐' }
-const form = reactive({ meal_type: 'dinner', date: localDateKey(), dining_time: '18:30', deadline: '16:30', title: '' })
+const types = {breakfast: '早餐', lunch: '午餐', dinner: '晚餐'}
+const form = reactive({meal_type: 'dinner', date: localDateKey(), dining_time: '18:30', deadline: '16:30', title: ''})
 const meals = ref([])
 
 const now = new Date()
 const currentMonth = computed(() => now.getMonth() + 1)
 
+// 计算日期标签
+const dateLabel = computed(() => {
+  const m = now.getMonth() + 1
+  const d = now.getDate()
+  const weekdays = ['周日', '周一', '周二', '周三', '周四', '周五', '周六']
+  return `${m}月${d}日 ${weekdays[now.getDay()]}`
+})
+
 const formattedUpcoming = computed(() => {
   return sortMealsByDiningTime(
-    meals.value.filter(item => item && item.status !== 'cancelled' && (item.status !== 'done' || item.date === localDateKey()))
+      meals.value.filter(item => item && item.status !== 'cancelled' && (item.status !== 'done' || item.date === localDateKey()))
   ).slice(0, 5)
 })
 
+// 聚光大卡数据（最近的一顿饭）
+const spotlightMeal = computed(() => formattedUpcoming.value[0] || null)
+// 议程列表（后面的饭局）
+const agendaMeals = computed(() => formattedUpcoming.value.slice(1))
+
 async function load() {
-  loading.value = true; error.value = ''
+  loading.value = true;
+  error.value = ''
   try {
     const [bootstrapData, loadedMeals] = await Promise.all([bootstrap(), request('/api/meals')])
-    settings.value = bootstrapData?.settings || {}; meals.value = Array.isArray(loadedMeals) ? loadedMeals : []
-  } catch (loadError) { error.value = loadError?.message || '饭局加载失败' }
-  finally { loading.value = false }
+    settings.value = bootstrapData?.settings || {};
+    meals.value = Array.isArray(loadedMeals) ? loadedMeals : []
+  } catch (loadError) {
+    error.value = loadError?.message || '饭局加载失败'
+  } finally {
+    loading.value = false
+  }
 }
 
-function openMeal(mealId) { uni.navigateTo({ url: `/pages/meal-detail/index?id=${mealId}` }) }
-function goMeals() { uni.reLaunch({ url: '/pages/meals/index' }) }
-function closeCreate() { if (!createPending.value) showCreate.value = false }
+function openMeal(mealId) {
+  uni.navigateTo({url: `/pages/meal-detail/index?id=${mealId}`})
+}
+
+function goMeals() {
+  uni.reLaunch({url: '/pages/meals/index'})
+}
+
+function closeCreate() {
+  showCreate.value = false
+}
 
 async function create() {
   if (createPending.value) return
   const validation = validateMealDraft(form)
-  if (validation) return uni.showToast({ title: validation, icon: 'none' })
+  if (validation) return uni.showToast({title: validation, icon: 'none'})
   createPending.value = true
   try {
-    const mealId = await run(async () => { const id = await request('/api/meals', { method: 'POST', data: { ...form } }); return typeof id === 'string' && id.trim() ? id : null }, '饭局已创建')
-    if (mealId) { showCreate.value = false; uni.navigateTo({ url: `/pages/meal-detail/index?id=${mealId}` }) }
-  } catch {} finally { createPending.value = false }
+    const mealId = await run(async () => {
+      const id = await request('/api/meals', {method: 'POST', data: {...form}});
+      return typeof id === 'string' && id.trim() ? id : null
+    }, '饭局已创建')
+    if (mealId) {
+      showCreate.value = false;
+      uni.navigateTo({url: `/pages/meal-detail/index?id=${mealId}`})
+    }
+  } catch {
+  } finally {
+    createPending.value = false
+  }
 }
 
-onMounted(load); onActivated(load)
+onMounted(load);
+onActivated(load)
 </script>
 
 <style scoped>
-@keyframes heroReveal {
-  from { opacity: 0; transform: translateY(12rpx); }
-  to { opacity: 1; transform: translateY(0); }
-}
-@keyframes mealSlideIn {
-  from { opacity: 0; transform: translateY(16rpx); }
-  to { opacity: 1; transform: translateY(0); }
+/* 瓷 · 设计系统变量 -- 与 login 页面一致 */
+.page {
+  --porcelain: #FAF7F1;
+  --card: #FFFFFF;
+  --clay: #EFE5D8;
+  --ink: #27211A;
+  --muted: #8B7F70;
+  --tomato: #D9482B;
+  --tomato-deep: #B93517;
+
+  background: var(--porcelain);
 }
 
-.hero {
-  padding: 64rpx 24rpx 56rpx;
-  background: var(--palette-hero-900);
-  color: var(--palette-neutral-0);
-  border-radius: 0 0 32rpx 32rpx;
-  animation: heroReveal 0.6s ease-out both;
-}
-.family {
-  margin-bottom: 16rpx;
-  color: var(--theme-hero-text-muted);
-  font-size: 22rpx;
-  font-weight: 500;
-  letter-spacing: 2rpx;
-}
-.greeting {
-  margin: 0;
-  color: var(--palette-neutral-0);
-  font-family: "Songti SC", "STSong", "Noto Serif CJK SC", serif;
-  font-size: 56rpx;
-  font-weight: 700;
-  line-height: 1.15;
-  letter-spacing: 0;
-}
-.prompt {
-  margin-top: 20rpx;
-  color: var(--theme-hero-text-subtle);
-  font-size: 26rpx;
-  line-height: 1.5;
-}
-.amber-accent {
-  margin-top: 22rpx;
-  width: 40rpx;
-  height: 6rpx;
-  background: var(--palette-amber-500);
-  border-radius: 3rpx;
-}
-
-.section-title {
-  display: block;
-  padding: 40rpx 0 8rpx;
-  color: var(--palette-ink-900);
-  font-size: 32rpx;
-  font-weight: 650;
-  line-height: 1.3;
-}
-
-.meal-list {
-  margin: 8rpx 0 0;
-}
-.meal-list :deep(.meal-row):first-child {
-  border-top: 1px solid var(--palette-line-200);
-  animation: mealSlideIn 0.5s ease-out both;
-}
-.meal-list :deep(.meal-row) { animation: mealSlideIn 0.5s ease-out both; }
-.meal-list :deep(.meal-row:nth-child(2)) { animation-delay: 0.08s; }
-.meal-list :deep(.meal-row:nth-child(3)) { animation-delay: 0.16s; }
-.meal-list :deep(.meal-row:nth-child(4)) { animation-delay: 0.24s; }
-.meal-list :deep(.meal-row:nth-child(5)) { animation-delay: 0.32s; }
-.meal-list :deep(.meal-row:nth-child(6)) { animation-delay: 0.40s; }
-
-.cta {
+/* ---------- 顶部问候 ---------- */
+.top {
   display: flex;
-  min-height: 64rpx;
-  margin: 28rpx 0;
-  padding: 0 24rpx;
+  align-items: center;
+  gap: 24rpx;
+  flex-direction: row;
+}
+
+.avatar {
+  width: 88rpx;
+  height: 88rpx;
+  border-radius: 50%;
+  background: var(--tomato);
+  color: #fff;
+  font-size: 34rpx;
+  font-weight: 700;
+  display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6rpx;
-  border: 0;
-  border-radius: 10rpx;
-  background: var(--palette-amber-500);
-  color: var(--palette-cream-50);
-  font-size: 24rpx;
-  font-weight: 700;
-  line-height: 1;
+  flex-shrink: 0;
 }
-.cta text { color: var(--palette-cream-50); }
 
-.footer {
+.top-text {
+  min-width: 0;
+  flex: 1;
+}
+
+.family {
+  font-size: 24rpx;
+  color: var(--muted);
+  letter-spacing: 1rpx;
+}
+
+.greet {
+  font-family: "Songti SC", "STSong", "Noto Serif CJK SC", serif;
+  font-size: 40rpx;
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--ink);
+  margin: 0;
+}
+
+.date-chip {
+  font-size: 24rpx;
+  color: var(--muted);
+  background: var(--clay);
+  border-radius: 1998rpx;
+  padding: 12rpx 24rpx;
+  white-space: nowrap;
+}
+
+.prompt-row {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 24rpx 0 40rpx;
-  font-size: 22rpx;
-  color: var(--palette-moss-600);
+  gap: 16rpx;
+  padding: 12rpx;
 }
-.footer text {
-  background: none;
+
+.prompt {
+  font-size: 30rpx;
+  color: var(--muted);
+}
+
+/* ---------- 主操作 ---------- */
+.cta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16rpx;
+  margin: 40rpx 0 0 0;
+  padding: 24rpx;
   border: 0;
-  font-size: inherit;
-  color: var(--palette-moss-600);
+  border-radius: 36rpx;
+  background: var(--tomato);
+  color: #fff;
+  font-size: 32rpx;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 20rpx 48rpx rgba(217, 72, 43, 0.28);
+  transition: background 0.15s ease, transform 0.1s ease;
+  flex-direction: row;
+}
+
+.cta:active {
+  transform: scale(0.985);
+  background: var(--tomato-deep);
+}
+
+.cta-icon {
+  width: 36rpx;
+  height: 36rpx;
+}
+
+.foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 36rpx 0;
+  font-size: 26rpx;
+  flex-direction: row;
+}
+
+.foot text {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.foot text:last-child {
+  color: var(--muted);
+  font-weight: 400;
+}
+
+/* ---------- 空状态 ---------- */
+.empty-state {
+  padding: 120rpx 48rpx;
+  text-align: center;
+  color: var(--muted);
+  font-size: 28rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24rpx;
+}
+
+.retry {
+  min-height: 64rpx;
+  padding: 0 32rpx;
+  font-size: 26rpx;
+}
+
+.state {
+  padding: 88rpx 0;
+  text-align: center;
+  color: var(--muted);
+  font-size: 27rpx;
+}
+
+.inline-error {
+  display: flex;
+  margin: 24rpx 48rpx 0;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--tomato);
+  font-size: 24rpx;
+  flex-direction: row;
+}
+
+.inline-error text:last-child {
+  color: var(--tomato);
+  font-weight: 600;
+}
+
+/* ---------- 开饭局面板(内容样式，外壳由 BottomSheet 组件提供) ---------- */
+.sheet-head {
+  margin-bottom: 12rpx;
+}
+
+.sheet-head > view:first-child {
+  display: flex;
+  flex-direction: column;
+}
+
+.sheet-title {
+  font-size: 40rpx;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.sheet-subtitle {
+  font-size: 24rpx;
+  color: var(--muted);
+  margin-top: 6rpx;
+}
+
+.sheet-close {
+  width: 64rpx;
+  height: 64rpx;
+  min-height: 64rpx;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--clay);
+  color: var(--ink);
+  font-size: 30rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
   cursor: pointer;
 }
 
-.state { padding: 64rpx 0; text-align: center; color: var(--palette-amber-500); font-size: 27rpx; }
-.state.panel { padding: 64rpx 0; }
-.empty-line button {
-  min-height: 64rpx;
-  margin-top: 16rpx;
-  background: transparent;
-  color: var(--palette-amber-500);
-  font-size: 24rpx;
-}
-.inline-error {
+.chips {
   display: flex;
-  margin: 24rpx 0 0;
+  gap: 20rpx;
+  margin: 20rpx 0;
+  flex-direction: row;
+}
+
+.chip {
+  flex: 1;
+  padding: 10rpx 0;
+  border: 3rpx solid var(--clay);
+  border-radius: 28rpx;
+  background: var(--card);
+  color: var(--muted);
+  font-size: 28rpx;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-align: center;
+}
+
+.chip.on {
+  border-color: var(--tomato);
+  color: var(--tomato);
+  background: rgba(217, 72, 43, 0.06);
+}
+
+.field {
+  margin-bottom: 12rpx;
+}
+
+.field .label {
+  display: block;
+  font-size: 26rpx;
+  font-weight: 600;
+  margin-bottom: 14rpx;
+  color: var(--ink);
+}
+
+.field .input {
+  width: 100%;
+  padding: 10rpx 32rpx;
+  border: 3rpx solid var(--clay);
+  border-radius: 28rpx;
+  background: var(--card);
+  font-size: 30rpx;
+  font-family: inherit;
+  color: var(--ink);
+  outline: none;
+}
+
+.field .input:focus {
+  border-color: var(--tomato);
+}
+
+.field .input::placeholder {
+  color: #B8AC9C;
+}
+
+.grid2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24rpx;
+}
+
+.picker {
+  display: flex;
   align-items: center;
-  justify-content: space-between;
-  color: var(--palette-danger-600);
-  font-size: 23rpx;
-}
-.inline-error button {
-  background: transparent;
-  color: var(--palette-danger-600);
-  font-size: 24rpx;
 }
 
-.create-sheet { width: 100%; padding: 40rpx 40rpx calc(var(--space-6) + env(safe-area-inset-bottom)); }
-.sheet-head { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: var(--space-6); }
-.sheet-head > view { display: flex; flex-direction: column; }
-.close {
-  display: flex; width: 56rpx; height: 56rpx; min-height: 56rpx; padding: 0;
-  align-items: center; justify-content: center; border-radius: 50%;
-  background: var(--palette-control-subtle); color: var(--palette-text-primary); border: 0;
-}
-.types { display: flex; margin: 28rpx 0; gap: 12rpx; }
-.time-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20rpx; }
-.form-group { margin-bottom: var(--space-5); }
-.deadline { margin-top: 24rpx; }
-.picker { display: flex; align-items: center; }
-
-@media (min-width: 700px) {
-  .hero { padding: 80rpx 24rpx; }
-  .greeting { font-size: 64rpx; }
-  .section-title, .meal-list, .cta, .footer, .inline-error { padding-left: 0; padding-right: 0; margin-left: 0; margin-right: 0; }
-  .meal-list { margin-left: 0; }
-  .page { max-width: 880px; margin: 0 auto; }
-}
-@media (min-width: 1024px) {
-  .page.page-wide { max-width: 1040px; }
+/* Sheet 内的 CTA 按钮 */
+.sheet-cta {
+  margin: 16rpx 0 0;
+  width: 100%;
+  padding: 20rpx;
+  border-radius: 28rpx;
+  font-size: 32rpx;
+  box-shadow: none;
 }
 
-@media (hover: hover) { button:hover { filter: brightness(.97); } }
-button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 2px solid var(--palette-amber-500); outline-offset: 3px; }
-/* #ifndef MP-WEIXIN */
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { animation-duration: .01ms !important; animation-delay: 0s !important; transition-duration: .01ms !important; }
+/* ---------- 焦点可访问性 ---------- */
+:focus-visible {
+  outline: 4rpx solid var(--tomato);
+  outline-offset: 6rpx;
+  border-radius: 12rpx;
 }
-/* #endif */
-
-.section-title, .cta, .footer, .inline-error, .sheet-head, .types, .time-grid { flex-direction: row; }
 </style>

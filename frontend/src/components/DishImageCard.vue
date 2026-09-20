@@ -11,7 +11,7 @@
       <text v-if="flavorText" class="dish-flavors">{{ flavorText }}</text>
       <text v-if="interestCount > 0" class="dish-interest">{{ interestCount }} 人想吃</text>
     </view>
-    <button
+    <view
       v-if="selectable"
       class="dish-select"
       :class="{ selected }"
@@ -19,7 +19,7 @@
       @tap.stop="emit('toggle', dish.id)"
     >
       <Icon :icon="selected ? 'Check' : 'Plus'" :size="17" />
-    </button>
+    </view>
   </view>
 </template>
 

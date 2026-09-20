@@ -10,7 +10,7 @@ defineProps({ title: { type: String, default: '' }, subtitle: { type: String, de
 </script>
 <style scoped>
 .page-header {
-  padding: 24rpx 0 32rpx;
+  padding: 24rpx 0 0 0 ;
 }
 .page-title {
   font-size: 40rpx;

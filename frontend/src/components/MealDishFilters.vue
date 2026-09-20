@@ -9,9 +9,9 @@
           confirm-type="search"
           @input="emit('update:query', $event.detail.value)"
       />
-      <button v-if="query" class="icon-button" aria-label="清除搜索" @tap="emit('update:query', '')">
+      <view v-if="query" class="icon-button" aria-label="清除搜索" @tap="emit('update:query', '')">
         <Icon icon="X" :size="16"/>
-      </button>
+      </view>
     </view>
 
     <scroll-view scroll-x class="filter-scroll" :show-scrollbar="false">
@@ -82,9 +82,11 @@ const hasFilters = computed(() => Boolean(props.query.trim() || props.cuisineId 
   min-height: 82rpx;
   padding: 0 18rpx 0 24rpx;
   align-items: center;
-  border: 1px solid var(--theme-border-subtle);
-  border-radius: var(--radius-control);
-  background: var(--theme-bg-surface);
+  border: 0;
+  border-radius: 999px;
+  background: #FFFFFF;
+  background: var(--theme-bg-card, #FFFFFF);
+  box-shadow: 0 4rpx 16rpx rgba(39, 33, 26, 0.12);
   color: var(--theme-text-secondary);
 }
 

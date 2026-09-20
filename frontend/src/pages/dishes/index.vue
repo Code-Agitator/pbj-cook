@@ -1,15 +1,14 @@
 <template>
   <view class="page no-tab page-wide">
     <BackButton label="我的" fallback-url="/pages/me/index" />
-    <view v-if="isAdmin" class="page-action"><button class="btn add" @tap="add"><Icon icon="Plus" :size="18" /> 添加菜品</button></view>
-    <PageHeader title="菜品管理" subtitle="维护家庭菜品、食材与做法" />
+    <view v-if="isAdmin" class="page-action"><view class="btn add" @tap="add"><Icon icon="Plus" :size="18" /> 添加菜品</view></view>
     <MealDishFilters :query="query" :cuisines="cuisines" :cuisine-id="cuisineId" :tags="activeTags" :available-tags="availableTags" :selected-count="0" :show-selected-only="false" :result-count="filtered.length" @update:query="query = $event" @update:cuisine-id="cuisineId = $event" @toggle-tag="toggleTag" @reset="resetFilters" />
     <view v-if="!isAdmin" class="state panel">仅管理员可管理菜品</view>
     <view v-else-if="loading && !dishes.length" class="state">正在加载菜品...</view>
-    <view v-else-if="error && !dishes.length" class="state panel"><text>{{ error }}</text><button class="btn tonal" @tap="load">重试</button></view>
+    <view v-else-if="error && !dishes.length" class="state panel"><text>{{ error }}</text><view class="btn tonal" @tap="load">重试</view></view>
     <view v-else-if="!filtered.length" class="state panel">{{ dishes.length ? '没有符合条件的菜品' : '菜品库还是空的' }}</view>
     <view v-else class="dish-grid"><DishImageCard v-for="dish in filtered" :key="dish.id" :dish="dish" :src="assetUrl(dish.image_path)" :selectable="false" @open="openDish" /></view>
-    <view v-if="error && dishes.length" class="inline-error"><text>{{ error }}</text><button @tap="load">重试</button></view>
+    <view v-if="error && dishes.length" class="inline-error"><text>{{ error }}</text><view @tap="load">重试</view></view>
   </view>
 </template>
 
@@ -46,6 +45,6 @@ onActivated(load)
 </script>
 
 <style scoped>
-.page-action{display:flex;justify-content:flex-end;padding:0 24rpx 12rpx}.add{min-height:70rpx;padding:0 22rpx;gap:8rpx}.dish-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18rpx}.state .btn{margin-top:20rpx}.inline-error{display:flex;margin:22rpx 24rpx 0;padding:18rpx 20rpx;align-items:center;justify-content:space-between;border-left:4rpx solid var(--theme-danger);background:var(--theme-danger-surface);color:var(--theme-danger);font-size:23rpx}.inline-error button{min-height:56rpx;background:transparent;color:var(--theme-danger)}@media(min-width:700px){.dish-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:22rpx}}@media(min-width:1024px){.dish-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
+.page-action{display:flex;justify-content:flex-end;padding:0 24rpx 12rpx}.add{min-height:70rpx;padding:0 22rpx;gap:8rpx}.dish-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18rpx}.state .btn{margin-top:20rpx}.inline-error{display:flex;margin:22rpx 24rpx 0;padding:18rpx 20rpx;align-items:center;justify-content:space-between;border-left:4rpx solid var(--theme-danger);background:var(--theme-danger-surface);color:var(--theme-danger);font-size:23rpx}.inline-error view{min-height:56rpx;background:transparent;color:var(--theme-danger);cursor:pointer}@media(min-width:700px){.dish-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:22rpx}}@media(min-width:1024px){.dish-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
 .inline-error{flex-direction:row}
 </style>
