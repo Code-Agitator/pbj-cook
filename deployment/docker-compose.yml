@@ -1,6 +1,6 @@
 services:
   app:
-    image: pbj-cook:latest
+    image: agitator/pbj-cook:latest
     ports:
       - "8000:8000"
     volumes:
