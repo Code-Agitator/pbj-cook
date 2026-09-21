@@ -79,7 +79,7 @@ jobs:
           file: ./Dockerfile
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.docker_meta.outputs.tags }}
-          labels: >-
+          labels: |
             ${{ steps.docker_meta.outputs.labels }}
             org.opencontainers.image.title=${{ steps.meta.outputs.package_name }}
             org.opencontainers.image.version=${{ steps.meta.outputs.package_version }}
@@ -89,8 +89,8 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - |-
-        >-
+      - name: Output summary
+        run: |
           echo "✅ Docker image built successfully!" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "| 属性 | 值 |" >> $GITHUB_STEP_SUMMARY
