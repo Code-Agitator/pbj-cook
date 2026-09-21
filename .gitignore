@@ -1,1 +1,12 @@
 .idea/
+.claude
+.codeium
+.codex
+.copilot
+.dsh
+.gemini
+.opencode
+.zcode
+.qoder
+node_modules/
+dist/

@@ -1,6 +1,4 @@
 #!name=custom_reject_list
-#!homepage=https://github.com/Cowjiang/shadowrocket-rules
-#!desc=Custom reject list
 [Rule]
 # 墨迹天气
 DOMAIN-KEYWORD,me.api.moji.com,REJECT
