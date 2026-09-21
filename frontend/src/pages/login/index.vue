@@ -18,7 +18,7 @@
 
     <view v-if="mode === 'login' && selected" class="pin-panel">
       <view class="back-member" @tap="goBack">‹ 换个成员</view>
-      <view class="pin-avatar" :style="{ background: avatarBg }">{{ selected.name.charAt(0) }}</view>
+      <Avatar :name="selected.name" :src="assetUrl(selected.avatar_path)" :size="144"/>
       <text class="member-name">{{ selected.name }}</text>
       <PinPad v-model="pin" :disabled="submitting" @complete="onPinComplete"/>
     </view>
@@ -45,12 +45,6 @@ import { assetUrl, bootstrap, request, run, setSession } from '../../api/client'
 
 const members = ref([]), settings = ref({}), selected = ref(null), mode = ref('login'),
     pin = ref(''), name = ref(''), joinCode = ref(''), submitting = ref(false)
-
-const avatarBg = computed(() => {
-  const colors = ['var(--tomato)', 'var(--moss)', '#C98A2D', '#7A6AAE']
-  const idx = members.value.findIndex(m => m.id === selected.value?.id)
-  return colors[(idx >= 0 ? idx : 0) % colors.length]
-})
 
 const pinLabel = computed(() => {
   if (selected.value || mode.value === 'register') return '输入 6 位密码'
@@ -266,19 +260,6 @@ onMounted(init)
   font-size: 27rpx;
   cursor: pointer;
   padding: 16rpx 0;
-  align-self: center;
-}
-
-.pin-avatar {
-  width: 144rpx;
-  height: 144rpx;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 52rpx;
-  font-weight: 800;
-  color: #fff;
   align-self: center;
 }
 
