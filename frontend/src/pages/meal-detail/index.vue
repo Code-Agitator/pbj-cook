@@ -1033,6 +1033,7 @@ onMounted(() => {
 }
 
 .sheet-head-info {
+  line-height: 0;
 }
 
 .sheet-title {
@@ -1065,8 +1066,9 @@ onMounted(() => {
 .detail-photo {
   border-radius: 36rpx;
   overflow: hidden;
-  height: 300rpx;
-  margin-bottom: 28rpx;
+  aspect-ratio: 3 / 4;
+  width: 70%;
+  margin: 0 auto 28rpx;
 }
 
 .detail-photo-image {
