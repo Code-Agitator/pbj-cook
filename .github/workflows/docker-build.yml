@@ -1,0 +1,102 @@
+name: Build and Push Docker Image
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+env:
+  REGISTRY: docker.io
+  IMAGE_NAME: agitator/pbj-cook
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Extract metadata from package.json
+        id: meta
+        run: |
+          # 从 package.json 提取信息
+          PACKAGE_NAME=$(node -p "require('./frontend/package.json').name")
+          PACKAGE_VERSION=$(node -p "require('./frontend/package.json').version")
+          PACKAGE_AUTHOR=$(node -p "require('./frontend/package.json').author.name")
+          PACKAGE_URL=$(node -p "require('./frontend/package.json').author.url")
+
+          echo "package_name=$PACKAGE_NAME" >> $GITHUB_OUTPUT
+          echo "package_version=$PACKAGE_VERSION" >> $GITHUB_OUTPUT
+          echo "package_author=$PACKAGE_AUTHOR" >> $GITHUB_OUTPUT
+          echo "package_url=$PACKAGE_URL" >> $GITHUB_OUTPUT
+
+          echo "📦 Package: $PACKAGE_NAME"
+          echo "🏷️  Version: $PACKAGE_VERSION"
+          echo "👤 Author: $PACKAGE_AUTHOR"
+          echo "🔗 URL: $PACKAGE_URL"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Extract Docker metadata
+        id: docker_meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.IMAGE_NAME }}
+          tags: |
+            # 分支推送 - 使用分支名作为标签
+            type=ref,event=branch
+            # tag 推送 - 使用语义化版本作为标签 (如 v1.0.0 -> 1.0.0)
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            # pr 事件
+            type=ref,event=pr
+            # 如果有 package.json 中的版本，也添加为标签
+            type=raw,value=${{ steps.meta.outputs.package_version }}
+            # latest 只在默认分支推送时添加
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.docker_meta.outputs.tags }}
+          labels: >-
+            ${{ steps.docker_meta.outputs.labels }}
+            org.opencontainers.image.title=${{ steps.meta.outputs.package_name }}
+            org.opencontainers.image.version=${{ steps.meta.outputs.package_version }}
+            org.opencontainers.image.authors=${{ steps.meta.outputs.package_author }}
+            org.opencontainers.image.url=${{ steps.meta.outputs.package_url }}
+            org.opencontainers.image.source=${{ steps.meta.outputs.package_url }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - |-
+        >-
+          echo "✅ Docker image built successfully!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| 属性 | 值 |" >> $GITHUB_STEP_SUMMARY
+          echo "|------|-----|" >> $GITHUB_STEP_SUMMARY
+          echo "| **镜像** | \`${{ env.IMAGE_NAME }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| **包名** | \`${{ steps.meta.outputs.package_name }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| **版本** | \`${{ steps.meta.outputs.package_version }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| **作者** | \`${{ steps.meta.outputs.package_author }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| **标签** | $(echo '${{ steps.docker_meta.outputs.tags }}' | tr '\n' ', ')" >> $GITHUB_STEP_SUMMARY
