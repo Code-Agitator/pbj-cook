@@ -28,6 +28,7 @@
 
 <script setup lang="js">
 import { computed, onActivated, onMounted, ref } from 'vue'
+import { onPullDownRefresh } from '@dcloudio/uni-app'
 import AppTabBar from '../../components/AppTabBar.vue'
 import MealList from '../../components/MealList.vue'
 import PageHeader from '../../components/PageHeader.vue'
@@ -59,6 +60,15 @@ function open(mealId) {
 
 onMounted(load)
 onActivated(load)
+
+
+onPullDownRefresh(async () => {
+  try {
+    await load()
+  } finally {
+    uni.stopPullDownRefresh()
+  }
+})
 </script>
 
 <style scoped>

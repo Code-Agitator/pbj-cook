@@ -160,10 +160,10 @@ async function saveProfile() {
   try {
     await run(async () => { 
       const payload = { name: profile.name.trim(), avatar_path: profile.avatar_path }; 
-      if (localAvatar.value) { 
-        const uploaded = await uploadImage(localAvatar.value, { maxSide: 512, quality: 80 }); 
-        payload.avatar_path = uploaded?.path || null 
-      } 
+      if (localAvatar.value) {
+        const uploaded = await uploadImage(localAvatar.value, { preset: 'avatar' });
+        payload.avatar_path = uploaded?.path || null
+      }
       await request('/api/me/profile', { method: 'PUT', data: payload }) 
     }, '资料已保存')
     me.value = await request('/api/me'); uni.setStorageSync('dacook_user', me.value); showProfile.value = false

@@ -287,7 +287,8 @@ async function save() {
   try {
     let imagePath = form.image_path;
     if (localImage.value) {
-      const uploaded = await uploadImage(localImage.value);
+      // 使用 dish 预设压缩：最长边 600px，质量 60%，预期 50-150 KB
+      const uploaded = await uploadImage(localImage.value, { preset: 'dish' });
       if (!uploaded?.path) throw new Error('上传图片失败');
       imagePath = uploaded.path
     }

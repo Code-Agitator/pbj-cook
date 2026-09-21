@@ -81,6 +81,7 @@
 
 <script setup lang="js">
 import {computed, onActivated, onMounted, reactive, ref} from 'vue'
+import { onPullDownRefresh } from '@dcloudio/uni-app'
 import AppTabBar from '../../components/AppTabBar.vue'
 import Avatar from '../../components/Avatar.vue'
 import BottomSheet from '../../components/BottomSheet.vue'
@@ -169,6 +170,15 @@ async function create() {
 
 onMounted(load);
 onActivated(load)
+
+
+onPullDownRefresh(async () => {
+  try {
+    await load()
+  } finally {
+    uni.stopPullDownRefresh()
+  }
+})
 </script>
 
 <style scoped>

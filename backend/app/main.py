@@ -360,9 +360,9 @@ def upload(file: UploadFile = File(...), me=Depends(auth_dependency)):
     target = UPLOAD_DIR / name
     with target.open("wb") as output:
         shutil.copyfileobj(file.file, output)
-    # 前端已做客户端压缩（菜品图≤1080px/75%质量，头像≤512px/80%质量）
-    # 此处保留 15MB 兜底，仅供异常未压缩场景拦截
-    if target.stat().st_size > 15 * 1024 * 1024:
+    # 前端已做客户端压缩（dish: 600px/60%质量 ~50-150KB, avatar: 200px/55%质量 ~10-30KB）
+    # 此处保留 5MB 兜底，仅供异常未压缩场景拦截
+    if target.stat().st_size > 5 * 1024 * 1024:
         target.unlink(missing_ok=True)
         raise HTTPException(413, "图片过大，请重新选择")
     return {"path": name, "url": f"/uploads/{name}"}

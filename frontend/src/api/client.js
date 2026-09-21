@@ -74,12 +74,26 @@ export function request(path, options = {}) {
 export const bootstrap = (options = {}) => request('/api/bootstrap', options)
 
 /**
+ * 压缩等级预设
+ */
+const COMPRESS_PRESETS = {
+  // 缩略图级别：~20-80 KB
+  thumbnail: { maxSide: 400, quality: 60 },
+  // 菜品展示图：~150-400 KB（最大宽度 1024px）
+  dish: { maxSide: 1024, quality: 70 },
+  // 头像：~30-80 KB
+  avatar: { maxSide: 300, quality: 65 },
+  // 高质量展示：~200-500 KB
+  high: { maxSide: 1080, quality: 75 },
+}
+
+/**
  * 压缩图片 — 限制最长边 + 质量，降低上传大小
  * @param {string} src 原始图片路径
- * @param {number} maxSide 最长边 px（菜品图建议 1080，头像建议 512）
+ * @param {number} maxSide 最长边 px（菜品图建议 600，头像建议 200）
  * @param {number} quality 压缩质量 0-100
  */
-function compressImage(src, maxSide = 1080, quality = 75) {
+function compressImage(src, maxSide = 720, quality = 70) {
   return new Promise((resolve, reject) => {
     // uni.compressImage H5 端部分浏览器不支持，做能力检测
     if (typeof uni.compressImage !== 'function') return resolve(src)
@@ -111,13 +125,79 @@ function compressImage(src, maxSide = 1080, quality = 75) {
 }
 
 /**
+ * Canvas 压缩 — 跨平台通用方案，压缩率更高
+ * @param {string} src 原始图片路径
+ * @param {number} maxSide 最长边 px
+ * @param {number} quality 压缩质量 0-100
+ * @param {string} format 输出格式 'jpeg' | 'webp'
+ */
+function canvasCompress(src, maxSide = 720, quality = 70, format = 'jpeg') {
+  return new Promise((resolve, reject) => {
+    // #ifdef H5
+    const img = new Image()
+    img.crossOrigin = 'anonymous'
+    img.onload = () => {
+      const long = Math.max(img.width, img.height)
+      const ratio = long > maxSide ? maxSide / long : 1
+      const width = Math.round(img.width * ratio)
+      const height = Math.round(img.height * ratio)
+
+      const canvas = document.createElement('canvas')
+      canvas.width = width
+      canvas.height = height
+      const ctx = canvas.getContext('2d')
+      ctx.drawImage(img, 0, 0, width, height)
+
+      const mimeType = format === 'webp' ? 'image/webp' : 'image/jpeg'
+      const dataUrl = canvas.toDataURL(mimeType, quality / 100)
+      resolve(dataUrl)
+    }
+    img.onerror = () => resolve(src)
+    img.src = src
+    // #endif
+    // #ifndef H5
+    // 非 H5 端使用原生压缩
+    resolve(src)
+    // #endif
+  })
+}
+
+/**
  * 上传图片（自动压缩后上传）
  * @param {string} filePath 原始图片路径
- * @param {{maxSide?: number, quality?: number}} opts 压缩参数
+ * @param {Object} opts 压缩参数
+ * @param {number} opts.maxSide 最长边 px（默认 600）
+ * @param {number} opts.quality 压缩质量 0-100（默认 60）
+ * @param {string} opts.preset 预设等级 'thumbnail'|'dish'|'avatar'|'high'
+ * @param {boolean} opts.useCanvas 是否使用 Canvas 压缩（H5 端更有效）
  */
 export async function uploadImage(filePath, opts = {}) {
-  const { maxSide = 1080, quality = 75 } = opts
-  const compressed = await compressImage(filePath, maxSide, quality)
+  const { preset, useCanvas = true, ...restOpts } = opts
+
+  // 如果有预设，使用预设参数
+  const compressOpts = preset && COMPRESS_PRESETS[preset]
+    ? COMPRESS_PRESETS[preset]
+    : { maxSide: 720, quality: 70, ...restOpts }
+
+  let compressed = filePath
+
+  // H5 端使用 Canvas 压缩（压缩率更高）
+  // #ifdef H5
+  if (useCanvas && typeof document !== 'undefined') {
+    compressed = await canvasCompress(filePath, compressOpts.maxSide, compressOpts.quality)
+  }
+  // #endif
+
+  // 非 H5 端使用原生压缩
+  // #ifndef H5
+  compressed = await compressImage(filePath, compressOpts.maxSide, compressOpts.quality)
+  // #endif
+
+  // 如果是 dataURL（Canvas 产出），转为 Blob 上传
+  if (compressed.startsWith('data:')) {
+    return uploadDataURL(compressed)
+  }
+
   return new Promise((resolve, reject) => {
     uni.uploadFile({
       url: `${apiBase()}/api/uploads`, filePath: compressed, name: 'file',
@@ -143,6 +223,54 @@ export async function uploadImage(filePath, opts = {}) {
       },
       fail(error) { reject(errorFrom(error, '无法连接服务器')) }
     })
+  })
+}
+
+/**
+ * 上传 Canvas 生成的 DataURL
+ * @param {string} dataURL base64 图片数据
+ */
+function uploadDataURL(dataURL) {
+  return new Promise((resolve, reject) => {
+    // 将 DataURL 转为 Blob
+    const byteString = atob(dataURL.split(',')[1])
+    const mimeString = dataURL.split(',')[0].split(':')[1].split(';')[0]
+    const ab = new ArrayBuffer(byteString.length)
+    const ia = new Uint8Array(ab)
+    for (let i = 0; i < byteString.length; i++) {
+      ia[i] = byteString.charCodeAt(i)
+    }
+    const blob = new Blob([ab], { type: mimeString })
+
+    // 创建 FormData 上传
+    const formData = new FormData()
+    formData.append('file', blob, 'image.jpg')
+
+    // 使用 fetch API 发送，让浏览器自动处理 boundary
+    fetch(`${apiBase()}/api/uploads`, {
+      method: 'POST',
+      body: formData,
+      headers: {
+        Authorization: `Bearer ${token()}`,
+        // 不手动设置 content-type，让浏览器自动添加 boundary
+      },
+    })
+      .then(async (response) => {
+        let body
+        try {
+          body = await response.json()
+        } catch {
+          reject(new Error('上传响应格式不正确'))
+          return
+        }
+
+        if (response.ok) return resolve(body)
+        if (response.status === 401) redirectAfterUnauthorized()
+        const error = new Error(body?.detail || '上传失败')
+        error.status = response.status
+        reject(error)
+      })
+      .catch((error) => reject(errorFrom(error, '无法连接服务器')))
   })
 }
 

@@ -5,8 +5,8 @@
     "backgroundTextStyle": "light"
   },
   "pages": [
-    { "path": "pages/home/index" },
-    { "path": "pages/meals/index" },
+    { "path": "pages/home/index", "style": { "enablePullDownRefresh": true } },
+    { "path": "pages/meals/index", "style": { "enablePullDownRefresh": true } },
     { "path": "pages/dishes/index" },
     { "path": "pages/wall/index" },
     { "path": "pages/me/index" },
