@@ -185,8 +185,20 @@ def seed_defaults(conn):
 def tick_schedules():
     now_dt = datetime.now(TZ)
     now = int(now_dt.timestamp())
-    result = {"created": 0, "started": 0, "finished": 0}
+    today = now_dt.strftime("%Y-%m-%d")
+    result = {"created": 0, "started": 0, "finished": 0, "cleaned": 0}
     with db() as conn:
+        # 清理历史自动生成且无人点菜、无人认领的饭局
+        result["cleaned"] = conn.execute(
+            """
+            DELETE FROM meals
+            WHERE is_auto = 1
+              AND cook_id IS NULL
+              AND date < ?
+              AND NOT EXISTS (SELECT 1 FROM orders WHERE orders.meal_id = meals.id)
+            """,
+            (today,),
+        ).rowcount
         schedules = conn.execute("SELECT * FROM meal_schedules WHERE enabled=1").fetchall()
         for s in schedules:
             for offset in range(0, 4):

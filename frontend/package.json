@@ -1,7 +1,11 @@
 {
-  "name": "dacook-uniapp",
+  "name": "pbj-cook",
+  "author": {
+    "name": "Code-Agitator",
+    "url": "https://github.com/Code-Agitator/pbj-cook.git",
+    "email": "agitatorlv@gmail.com"
+  },
   "version": "1.0.0",
-  "private": true,
   "scripts": {
     "dev:h5": "uni --host 0.0.0.0",
     "build:h5": "uni build",
