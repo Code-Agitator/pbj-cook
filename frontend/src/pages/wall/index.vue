@@ -113,12 +113,11 @@ onActivated(load)
   margin-top: var(--space-5);
   display: flex;
   flex-direction: column;
-  gap: 28rpx;
 }
 
 .member-card {
   background: var(--theme-bg-surface);
-  border: 1px solid var(--theme-border-subtle);
+  margin-bottom: var(--space-4);
   border-radius: 48rpx;
   padding: 40rpx;
   box-shadow: 0 8rpx 24rpx rgba(90, 60, 30, 0.06);

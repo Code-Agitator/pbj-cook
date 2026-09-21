@@ -73,10 +73,54 @@ export function request(path, options = {}) {
 
 export const bootstrap = (options = {}) => request('/api/bootstrap', options)
 
-export function uploadImage(filePath) {
+/**
+ * 压缩图片 — 限制最长边 + 质量，降低上传大小
+ * @param {string} src 原始图片路径
+ * @param {number} maxSide 最长边 px（菜品图建议 1080，头像建议 512）
+ * @param {number} quality 压缩质量 0-100
+ */
+function compressImage(src, maxSide = 1080, quality = 75) {
+  return new Promise((resolve, reject) => {
+    // uni.compressImage H5 端部分浏览器不支持，做能力检测
+    if (typeof uni.compressImage !== 'function') return resolve(src)
+    // #ifdef MP-WEIXIN || APP-PLUS
+    uni.getImageInfo({
+      src,
+      success(info) {
+        const long = Math.max(info.width, info.height)
+        const ratio = long > maxSide ? maxSide / long : 1
+        const targetWidth = Math.round(info.width * ratio)
+        const targetHeight = Math.round(info.height * ratio)
+        uni.compressImage({
+          src,
+          quality,
+          width: targetWidth,
+          height: targetHeight,
+          success(res) { resolve(res.tempFilePath || src) },
+          fail() { resolve(src) }
+        })
+      },
+      fail() { resolve(src) }
+    })
+    // #endif
+    // #ifdef H5
+    // H5 端 quality 在 chooseImage 时已生效，compressImage 兼容性差，直接使用原图
+    resolve(src)
+    // #endif
+  })
+}
+
+/**
+ * 上传图片（自动压缩后上传）
+ * @param {string} filePath 原始图片路径
+ * @param {{maxSide?: number, quality?: number}} opts 压缩参数
+ */
+export async function uploadImage(filePath, opts = {}) {
+  const { maxSide = 1080, quality = 75 } = opts
+  const compressed = await compressImage(filePath, maxSide, quality)
   return new Promise((resolve, reject) => {
     uni.uploadFile({
-      url: `${apiBase()}/api/uploads`, filePath, name: 'file',
+      url: `${apiBase()}/api/uploads`, filePath: compressed, name: 'file',
       header: { Authorization: `Bearer ${token()}` },
       success(res) {
         try {

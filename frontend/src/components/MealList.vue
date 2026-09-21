@@ -99,10 +99,11 @@ function onOpen(mealId) {
 /* ========== 大圆角卡片容器 ========== */
 .meal-card-list {
   background: #FFFFFF;
-  border: 1px solid #EFE5D8;
   border-radius: 48rpx;
   overflow: hidden;
+  box-shadow: 0 16rpx 48rpx rgba(90, 60, 30, 0.08);
 }
+
 
 /* ========== 加载更多 ========== */
 .load-more {

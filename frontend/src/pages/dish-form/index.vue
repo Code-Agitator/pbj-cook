@@ -11,27 +11,22 @@
       <view class="btn ghost" @tap="uni.reLaunch({ url: '/pages/dishes/index' })">返回菜品管理</view>
     </view>
     <template v-else-if="ready">
-      <!-- 顶部 -->
-      <view class="top">
+      <!-- 顶部导航栏 - 与 meal-detail 保持一致 -->
+      <view class="topbar">
         <BackButton label="菜品管理" fallback-url="/pages/dishes/index"/>
-        <view class="top-text">
-          <view class="title">{{ id ? '编辑菜品' : '添加菜品' }}</view>
-        </view>
       </view>
-      <view class="prompt">录好的菜，家人点饭局时就能点到</view>
 
       <!-- 基本信息 -->
       <section class="section">
-        <h2>基本信息</h2>
 
         <view class="field">
           <label for="fName">菜名 <span class="optional">必填</span></label>
-          <input id="fName" v-model="form.name" type="text" maxlength="30" placeholder="例如：红烧肉" class="input"/>
+          <BaseInput id="fName" v-model="form.name" placeholder="例如：红烧肉" :maxlength="30" />
         </view>
 
         <view class="field">
           <label for="fDesc">一句话介绍 <span class="optional">选填</span></label>
-          <textarea id="fDesc" v-model="form.description" maxlength="300" rows="2" placeholder="口味、特色或家人的偏好" class="input"></textarea>
+          <BaseInput id="fDesc" v-model="form.description" type="textarea" :maxlength="300" :rows="2" placeholder="口味、特色或家人的偏好" />
         </view>
 
         <view class="field">
@@ -48,20 +43,15 @@
         </view>
 
         <view class="field">
-          <label>标签 <span class="optional">可多选</span></label>
-          <view class="tag-chips" role="group" aria-label="选择标签">
-            <view v-for="tag in availableTags" :key="tag"
-                  class="chip"
-                  :class="{ on: selectedTags.includes(tag), alt: customTags.includes(tag) }"
-                  @tap="toggleTag(tag)">
-              {{ tag }}
-            </view>
-            <view class="add-tag" @tap="addCustomTag">
-              <Icon icon="Plus" :size="13"/>
-              自定义
-            </view>
-          </view>
-          <text class="hint">最多选 3 个标签</text>
+          <label>标签 <span class="optional">{{ selectedTags.length }}/{{ tagInputMax }}</span></label>
+          <TagInput
+            ref="tagInputRef"
+            v-model="selectedTags"
+            :max-tags="tagInputMax"
+            :predefined-tags="predefinedTags"
+            placeholder="输入标签，回车添加"
+          />
+          <text class="hint">最多 {{ tagInputMax }} 个，输入后回车或选择已有标签，点击 × 移除</text>
         </view>
       </section>
 
@@ -95,8 +85,8 @@
               placeholder="食材"
               @select="onIngredientSelect(item, $event)"
             />
-            <input v-model="item.quantity" type="text" placeholder="用量" class="input" aria-label="用量"/>
-            <input v-model="item.unit" type="text" placeholder="单位" class="input" aria-label="单位"/>
+            <BaseInput v-model="item.quantity" placeholder="用量" aria-label="用量"/>
+            <BaseInput v-model="item.unit" placeholder="单位" aria-label="单位"/>
             <view class="row-remove" @tap="removeIngredient(item.key)" :class="{ hidden: form.ingredients.length <= 1 }">
               <Icon icon="X" :size="16"/>
             </view>
@@ -114,7 +104,7 @@
         <view id="stepRows">
           <view v-for="(step, index) in form.steps" :key="step.key" class="step-row">
             <view class="step-no">{{ index + 1 }}</view>
-            <textarea v-model="step.body" rows="1" placeholder="这一步怎么做" class="input" :aria-label="'第 ' + (index + 1) + ' 步'"></textarea>
+            <BaseInput v-model="step.body" type="textarea" placeholder="这一步怎么做" :aria-label="'第 ' + (index + 1) + ' 步'"/>
             <view class="row-remove" @tap="removeStep(step.key)" :class="{ hidden: form.steps.length <= 1 }">
               <Icon icon="X" :size="16"/>
             </view>
@@ -131,7 +121,7 @@
         <h2>其他 <span class="optional">选填</span></h2>
         <view class="field">
           <label for="fSource">来源链接</label>
-          <input id="fSource" v-model="form.source_url" type="text" placeholder="菜谱或视频链接" class="input"/>
+          <BaseInput id="fSource" v-model="form.source_url" placeholder="菜谱或视频链接"/>
         </view>
       </section>
 
@@ -153,6 +143,8 @@ import {computed, onMounted, reactive, ref} from 'vue'
 import BackButton from '../../components/BackButton.vue'
 import Icon from '../../components/Icons.vue'
 import IngredientAutocomplete from '../../components/IngredientAutocomplete.vue'
+import TagInput from '../../components/TagInput.vue'
+import BaseInput from '../../components/BaseInput.vue'
 import {assetUrl, currentUser, request, run, uploadImage} from '../../api/client'
 import {cuisineIdFromPicker, normalizeDishDraft} from '../../utils/app'
 
@@ -175,8 +167,10 @@ function newStep(body = '') {
 
 const id = ref(''), cuisines = ref([]), preview = ref(''), localImage = ref('')
 const loading = ref(false), ready = ref(false), error = ref(''), saving = ref(false), unauthorized = ref(false)
-const selectedTags = ref([]), customTags = ref([])
-const availableTags = computed(() => Array.from(new Set([...predefinedTags, ...customTags.value])).slice(0, 12))
+const selectedTags = ref([])
+const tagInputRef = ref(null)
+const tagInputMax = 3
+const allAvailableTags = ref([])
 
 const predefinedTags = ['下饭', '清淡', '微辣', '快手', '硬菜', '素食', '汤羹', '面点', '家常', '宴客', '懒人', '营养']
 
@@ -228,7 +222,6 @@ function applyDish(dish) {
   form.ingredients = (Array.isArray(dish.ingredients) ? dish.ingredients : []).map(newIngredient);
   form.steps = (Array.isArray(dish.steps) ? dish.steps : []).map(step => newStep(step?.body));
   selectedTags.value = Array.isArray(dish.tags) ? dish.tags.filter(Boolean) : [];
-  customTags.value = selectedTags.value.filter(tag => !predefinedTags.includes(tag));
   preview.value = assetUrl(form.image_path);
   localImage.value = ''
 }
@@ -237,31 +230,13 @@ function showMessage(title) {
   uni.showToast({title, icon: 'none'})
 }
 
-function toggleTag(tag) {
-  const idx = selectedTags.value.indexOf(tag)
-  if (idx >= 0) {
-    selectedTags.value.splice(idx, 1)
-  } else {
-    if (selectedTags.value.length >= 3) return showMessage('最多选 3 个标签');
-    selectedTags.value.push(tag)
-  }
-}
-
-function addCustomTag() {
+async function fetchTags() {
   try {
-    uni.showModal({
-      title: '新标签',
-      editable: true,
-      placeholderText: '输入标签名称（最多 6 字）',
-      success: res => {
-        if (!res.confirm) return
-        let name = (res.content || '').trim().slice(0, 6)
-        if (!name) return
-        if (availableTags.value.includes(name)) return showMessage('标签已存在')
-        customTags.value.push(name)
-        selectedTags.value.push(name)
-      }
-    })
+    const tags = await request('/api/tags')
+    if (Array.isArray(tags)) {
+      allAvailableTags.value = tags
+      tagInputRef.value?.setTags(tags)
+    }
   } catch {}
 }
 
@@ -339,6 +314,7 @@ onMounted(() => {
   } catch {
   }
   load()
+  fetchTags()
 })
 </script>
 
@@ -352,22 +328,15 @@ onMounted(() => {
   margin-top: 20rpx;
 }
 
-/* ---------- 顶部 ---------- */
-.top {
+/* ---------- 顶部导航栏 - 与 meal-detail 保持一致 ---------- */
+.topbar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 32rpx 28rpx 0;
-  flex-direction: row;
 }
 
-.eyebrow {
-  font-size: 22rpx;
-  color: var(--theme-text-secondary);
-  letter-spacing: 0.5px;
-}
+.topbar-title {
 
-.title {
+  padding: 16rpx 28rpx 0;
   font-size: 38rpx;
   font-weight: 800;
   line-height: 1.3;
@@ -425,36 +394,12 @@ onMounted(() => {
   font-size: 20rpx;
 }
 
-.field .input {
-  width: 100%;
-  padding: 22rpx 26rpx;
-  border: 0;
-  border-radius: 28rpx;
-  background: var(--theme-bg-surface);
-  font-size: 27rpx;
-  font-family: inherit;
-  color: var(--theme-text-primary);
-  outline: none;
-  transition: box-shadow 0.15s ease;
-  display: flex;
-  align-items: center;
-  box-shadow: 0 4rpx 16rpx rgba(25, 34, 28, 0.06), 0 1px 2rpx rgba(25, 34, 28, 0.04);
-}
-
-.field textarea.input {
+/* .input-elevated 基样式定义在全局 styles.css 中 */
+textarea.input-elevated {
   min-height: 100rpx;
   padding-top: 22rpx;
   resize: none;
   line-height: 1.6;
-  box-shadow: 0 4rpx 16rpx rgba(25, 34, 28, 0.06), 0 1px 2rpx rgba(25, 34, 28, 0.04);
-}
-
-.field .input:focus {
-  box-shadow: 0 6rpx 24rpx rgba(232, 130, 74, 0.18), 0 2rpx 4rpx rgba(232, 130, 74, 0.1);
-}
-
-.field .input::placeholder {
-  color: var(--palette-placeholder, #B8AC9C);
 }
 
 .field + .field {
@@ -543,7 +488,6 @@ onMounted(() => {
   gap: 24rpx;
   padding: 22rpx;
   background: var(--theme-bg-surface);
-  border: 1.5px solid var(--theme-border-subtle);
   border-radius: 26rpx;
   cursor: pointer;
   width: 100%;
@@ -601,28 +545,7 @@ onMounted(() => {
   margin-top: 16rpx;
 }
 
-.ing-row .input {
-  width: 100%;
-  padding: 18rpx 18rpx;
-  border: 0;
-  border-radius: 22rpx;
-  background: var(--theme-bg-surface);
-  font-size: 26rpx;
-  font-family: inherit;
-  color: var(--theme-text-primary);
-  outline: none;
-  display: flex;
-  align-items: center;
-  box-shadow: 0 4rpx 16rpx rgba(25, 34, 28, 0.06), 0 1px 2rpx rgba(25, 34, 28, 0.04);
-}
-
-.ing-row .input:focus {
-  box-shadow: 0 6rpx 24rpx rgba(232, 130, 74, 0.18), 0 2rpx 4rpx rgba(232, 130, 74, 0.1);
-}
-
-.ing-row .input::placeholder {
-  color: var(--palette-placeholder, #B8AC9C);
-}
+/* BaseInput 组件已接管输入框样式 */
 
 .ing-head {
   display: grid;
@@ -720,29 +643,7 @@ onMounted(() => {
   flex-shrink: 0;
 }
 
-.step-row .input {
-  width: 100%;
-  padding: 18rpx 18rpx;
-  border: 0;
-  border-radius: 22rpx;
-  background: var(--theme-bg-surface);
-  font-size: 26rpx;
-  font-family: inherit;
-  color: var(--theme-text-primary);
-  outline: none;
-  resize: none;
-  line-height: 1.55;
-  min-height: 76rpx;
-  box-shadow: 0 4rpx 16rpx rgba(25, 34, 28, 0.06), 0 1px 2rpx rgba(25, 34, 28, 0.04);
-}
-
-.step-row .input:focus {
-  box-shadow: 0 6rpx 24rpx rgba(232, 130, 74, 0.18), 0 2rpx 4rpx rgba(232, 130, 74, 0.1);
-}
-
-.step-row .input::placeholder {
-  color: var(--palette-placeholder, #B8AC9C);
-}
+/* BaseInput 组件已接管输入框样式 */
 
 /* ---------- 保存按钮 ---------- */
 .cta {

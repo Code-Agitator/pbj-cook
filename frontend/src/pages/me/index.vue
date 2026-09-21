@@ -28,6 +28,14 @@
           </view>
           <Icon icon="ChevronRight" :size="17" />
         </view>
+        <view class="menu-row" @tap="goCuisines">
+          <view class="menu-icon"><Icon icon="UtensilsCrossed" :size="19" /></view>
+          <view class="menu-copy">
+            <text>菜系管理</text>
+            <text class="menu-sub">统一菜系分类</text>
+          </view>
+          <Icon icon="ChevronRight" :size="17" />
+        </view>
         <view class="menu-row" @tap="goIngredients">
           <view class="menu-icon"><Icon icon="Sprout" :size="19" /></view>
           <view class="menu-copy">
@@ -87,9 +95,9 @@
         </view>
         <view class="form-group">
           <text class="label">昵称</text>
-          <input v-model="profile.name" class="input" maxlength="12" placeholder="请输入昵称" />
+          <BaseInput v-model="profile.name" maxlength="12" placeholder="请输入昵称" />
         </view>
-        <view class="save btn" :class="{ disabled: savingProfile }" @tap="saveProfile">{{ savingProfile ? '保存中...' : '保存资料' }}</view>
+        <AppButton block :loading="savingProfile" @tap="saveProfile">保存资料</AppButton>
       </view>
     </view>
   </view>
@@ -101,6 +109,8 @@ import Icon from '../../components/Icons.vue'
 import AppTabBar from '../../components/AppTabBar.vue'
 import Avatar from '../../components/Avatar.vue'
 import PageHeader from '../../components/PageHeader.vue'
+import BaseInput from '../../components/BaseInput.vue'
+import AppButton from '../../components/AppButton.vue'
 import { assetUrl, bootstrap, clearSession, currentUser, request, run, uploadImage } from '../../api/client'
 import { validatePin, validateProfileName } from '../../utils/app'
 
@@ -120,6 +130,7 @@ async function load() {
 }
 function goAdmin() { if (me.value?.is_admin) uni.navigateTo({ url: '/pages/admin/index' }) }
 function goDishes() { if (me.value?.is_admin) uni.navigateTo({ url: '/pages/dishes/index' }) }
+function goCuisines() { if (me.value?.is_admin) uni.navigateTo({ url: '/pages/cuisines/index' }) }
 function goIngredients() { if (me.value?.is_admin) uni.navigateTo({ url: '/pages/ingredients/index' }) }
 function openProfile() { 
   const saved = me.value || {}; 
@@ -150,7 +161,7 @@ async function saveProfile() {
     await run(async () => { 
       const payload = { name: profile.name.trim(), avatar_path: profile.avatar_path }; 
       if (localAvatar.value) { 
-        const uploaded = await uploadImage(localAvatar.value); 
+        const uploaded = await uploadImage(localAvatar.value, { maxSide: 512, quality: 80 }); 
         payload.avatar_path = uploaded?.path || null 
       } 
       await request('/api/me/profile', { method: 'PUT', data: payload }) 
@@ -203,11 +214,9 @@ onActivated(load)
   display: flex;
   align-items: center;
   gap: 28rpx;
-  width: calc(100% - 40rpx);
   margin: 24rpx 0;
   padding: 36rpx;
   background: var(--theme-bg-surface);
-  border: 1px solid var(--theme-border-subtle);
   border-radius: 44rpx;
   border-left: 8rpx solid var(--theme-action-primary);
   text-align: left;
@@ -260,7 +269,6 @@ onActivated(load)
 }
 .menu-list {
   background: var(--theme-bg-surface);
-  border: 1px solid var(--theme-border-subtle);
   border-radius: 36rpx;
   overflow: hidden;
 }
@@ -395,34 +403,8 @@ onActivated(load)
   font-weight: 600;
   margin-bottom: 14rpx;
 }
-.input {
-  width: 100%;
-  padding: 26rpx 30rpx;
-  border: 2rpx solid var(--theme-border-subtle);
-  border-radius: 26rpx;
-  background: var(--theme-bg-surface);
-  font-size: 30rpx;
-  font-family: inherit;
-  color: var(--theme-text-primary);
-  outline: none;
-}
-.input:focus {
-  border-color: var(--theme-action-primary);
-}
-.save {
-  display: block;
-  width: 100%;
-  padding: 30rpx;
-  border: 0;
-  border-radius: 30rpx;
-  background: var(--theme-action-primary);
-  color: var(--theme-text-inverse);
-  font-size: 30rpx;
-  font-weight: 700;
-  cursor: pointer;
-}
-.save:hover {
-  background: var(--theme-action-primary-strong);
+.sheet :deep(.app-btn--block) {
+  margin-top: 12rpx;
 }
 
 /* Flex row overrides */

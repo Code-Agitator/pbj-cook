@@ -71,8 +71,8 @@ export function formatMealTime(value) {
 
   const date = new Date(timestamp * 1000)
   if (Number.isNaN(date.getTime())) return '时间待定'
-  const hours = String(date.getUTCHours()).padStart(2, '0')
-  const minutes = String(date.getUTCMinutes()).padStart(2, '0')
+  const hours = String(date.getHours()).padStart(2, '0')
+  const minutes = String(date.getMinutes()).padStart(2, '0')
   return `${hours}:${minutes}`
 }
 
@@ -87,8 +87,8 @@ export function mealDateLabel(meal, now = new Date()) {
   if (timestamp === null) return '日期待定'
   const fallback = new Date(timestamp * 1000)
   if (Number.isNaN(fallback.getTime())) return '日期待定'
-  const fallbackKey = `${String(fallback.getUTCFullYear()).padStart(4, '0')}-${String(fallback.getUTCMonth() + 1).padStart(2, '0')}-${String(fallback.getUTCDate()).padStart(2, '0')}`
-  return fallbackKey === localDateKey(now) ? '今天' : `${fallback.getUTCMonth() + 1}月${fallback.getUTCDate()}日`
+  const fallbackKey = `${String(fallback.getFullYear()).padStart(4, '0')}-${String(fallback.getMonth() + 1).padStart(2, '0')}-${String(fallback.getDate()).padStart(2, '0')}`
+  return fallbackKey === localDateKey(now) ? '今天' : `${fallback.getMonth() + 1}月${fallback.getDate()}日`
 }
 
 export function mealCardData(meal, now = new Date()) {

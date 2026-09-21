@@ -1,17 +1,19 @@
 <template>
   <view class="meal-filters">
     <view class="search-wrap">
-      <Icon icon="Search" :size="18"/>
-      <input
-          class="search-input"
-          :value="query"
+      <BaseInput
+          :model-value="query"
+          prefix-icon="Search"
           placeholder="搜索菜名、口味或标签"
           confirm-type="search"
-          @input="emit('update:query', $event.detail.value)"
-      />
-      <view v-if="query" class="icon-button" aria-label="清除搜索" @tap="emit('update:query', '')">
-        <Icon icon="X" :size="16"/>
-      </view>
+          @update:model-value="emit('update:query', $event)"
+      >
+        <template #suffix>
+          <view v-if="query" class="icon-button" aria-label="清除搜索" @tap="emit('update:query', '')">
+            <Icon icon="X" :size="16"/>
+          </view>
+        </template>
+      </BaseInput>
     </view>
 
     <scroll-view scroll-x class="filter-scroll" :show-scrollbar="false">
@@ -55,6 +57,7 @@
 <script setup lang="js">
 import {computed} from 'vue'
 import Icon from './Icons.vue'
+import BaseInput from './BaseInput.vue'
 
 const props = defineProps({
   query: {type: String, default: ''},
@@ -73,30 +76,9 @@ const hasFilters = computed(() => Boolean(props.query.trim() || props.cuisineId 
 </script>
 
 <style scoped>
-.meal-filters {
-  padding: 28rpx 0 0 0;
-}
 
-.search-wrap {
-  display: flex;
-  min-height: 82rpx;
-  padding: 0 18rpx 0 24rpx;
-  align-items: center;
-  border: 0;
-  border-radius: 999px;
-  background: #FFFFFF;
-  background: var(--theme-bg-card, #FFFFFF);
-  box-shadow: 0 4rpx 16rpx rgba(39, 33, 26, 0.12);
-  color: var(--theme-text-secondary);
-}
 
-.search-input {
-  flex: 1;
-  height: 80rpx;
-  margin-left: 16rpx;
-  color: var(--theme-text-primary);
-  font-size: 27rpx;
-}
+
 
 .icon-button {
   display: flex;
@@ -142,7 +124,6 @@ const hasFilters = computed(() => Boolean(props.query.trim() || props.cuisineId 
 .filter-meta {
   display: flex;
   min-height: 58rpx;
-  margin-top: 10rpx;
   align-items: center;
   justify-content: space-between;
   color: var(--theme-text-secondary);

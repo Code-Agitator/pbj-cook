@@ -15,7 +15,8 @@
     { "path": "pages/meal-detail/index" },
     { "path": "pages/dish-form/index" },
     { "path": "pages/admin/index" },
-    { "path": "pages/ingredients/index" }
+    { "path": "pages/ingredients/index" },
+    { "path": "pages/cuisines/index" }
   ],
   "tabBar": {
     "custom": true,
@@ -41,7 +42,8 @@
       { "path": "pages/meal-detail/index" },
       { "path": "pages/dish-form/index" },
       { "path": "pages/admin/index" },
-      { "path": "pages/ingredients/index" }
+      { "path": "pages/ingredients/index" },
+      { "path": "pages/cuisines/index" }
     ]
   }
 }

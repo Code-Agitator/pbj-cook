@@ -348,9 +348,11 @@ def upload(file: UploadFile = File(...), me=Depends(auth_dependency)):
     target = UPLOAD_DIR / name
     with target.open("wb") as output:
         shutil.copyfileobj(file.file, output)
-    if target.stat().st_size > 5 * 1024 * 1024:
+    # 前端已做客户端压缩（菜品图≤1080px/75%质量，头像≤512px/80%质量）
+    # 此处保留 15MB 兜底，仅供异常未压缩场景拦截
+    if target.stat().st_size > 15 * 1024 * 1024:
         target.unlink(missing_ok=True)
-        raise HTTPException(413, "图片不能超过 5MB")
+        raise HTTPException(413, "图片过大，请重新选择")
     return {"path": name, "url": f"/uploads/{name}"}
 
 
@@ -385,6 +387,20 @@ def create_cuisine(payload: dict, me=Depends(admin_dependency)):
         return {"id": cuisine_id}
 
 
+@app.put("/api/cuisines/{cuisine_id}")
+def update_cuisine(cuisine_id: str, payload: dict, me=Depends(admin_dependency)):
+    name = str(payload.get("name", "")).strip()
+    if not name:
+        raise HTTPException(422, "请填写菜系名称")
+    emoji = str(payload.get("emoji", ""))[:4]
+    with db() as conn:
+        try:
+            conn.execute("UPDATE dish_cuisines SET name=?, emoji=? WHERE id=?", (name[:12], emoji, cuisine_id))
+        except Exception:
+            raise HTTPException(409, "菜系名称已存在")
+        return {"ok": True}
+
+
 @app.delete("/api/cuisines/{cuisine_id}")
 def delete_cuisine(cuisine_id: str, me=Depends(admin_dependency)):
     with db() as conn:
@@ -392,6 +408,19 @@ def delete_cuisine(cuisine_id: str, me=Depends(admin_dependency)):
             raise HTTPException(409, "该菜系仍有菜品，不能删除")
         conn.execute("DELETE FROM dish_cuisines WHERE id=?", (cuisine_id,))
     return {"ok": True}
+
+
+@app.get("/api/tags")
+def list_tags(me=Depends(auth_dependency)):
+    with db() as conn:
+        rows = conn.execute("SELECT tags FROM dishes WHERE status='active'").fetchall()
+    tags = set()
+    for row in rows:
+        for tag in json_load(row["tags"], []):
+            tag = str(tag).strip()
+            if tag:
+                tags.add(tag)
+    return sorted(tags)
 
 
 @app.get("/api/dishes")

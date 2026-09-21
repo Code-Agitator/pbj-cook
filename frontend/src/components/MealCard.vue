@@ -38,6 +38,7 @@
 
 <script setup lang="js">
 import { computed } from 'vue'
+import { formatMealTime } from '../utils/app'
 
 const props = defineProps({
   meal: { type: Object, default: () => ({}) },
@@ -64,14 +65,10 @@ const timeOfDay = computed(() => {
   return '饭局'
 })
 
-// 时间格式化
+// 时间格式化 - 复用 app.js 中的 formatMealTime
 const timeLabel = computed(() => {
-  if (!props.meal?.dining_time) return '--:--'
-  const timestamp = Number(props.meal.dining_time)
-  if (!Number.isFinite(timestamp)) return '--:--'
-  const date = new Date(timestamp * 1000)
-  if (Number.isNaN(date.getTime())) return '--:--'
-  return `${String(date.getUTCHours()).padStart(2, '0')}:${String(date.getUTCMinutes()).padStart(2, '0')}`
+  const formatted = formatMealTime(props.meal?.dining_time)
+  return formatted === '时间待定' ? '--:--' : formatted
 })
 
 // 日期信息
@@ -102,11 +99,9 @@ const metaText = computed(() => {
   const deadline = props.meal?.order_deadline
   const deadlineTs = deadline !== undefined && deadline !== null && deadline !== '' ? Number(deadline) : NaN
   if (Number.isFinite(deadlineTs)) {
-    const d = new Date(deadlineTs * 1000)
-    if (!Number.isNaN(d.getTime())) {
-      const hh = String(d.getUTCHours()).padStart(2, '0')
-      const mm = String(d.getUTCMinutes()).padStart(2, '0')
-      return `${count} 人点菜 · 点菜截止 ${hh}:${mm}`
+    const deadlineFormatted = formatMealTime(deadlineTs)
+    if (deadlineFormatted !== '时间待定') {
+      return `${count} 人点菜 · 点菜截止 ${deadlineFormatted}`
     }
   }
   return `${count} 人点菜 · 筹备中`
@@ -128,9 +123,7 @@ function open() {
 <style scoped>
 /* ========== 聚光大卡样式（spotlight） ========== */
 .spotlight {
-  margin: 20rpx 0;
   background: #FFFFFF;
-  border: 1px solid #EFE5D8;
   border-radius: 56rpx;
   padding: 48rpx;
   box-shadow: 0 24rpx 64rpx rgba(90, 60, 30, 0.07);

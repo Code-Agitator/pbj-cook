@@ -2,22 +2,22 @@
   <view class="page no-tab meal-page" @tap="showMore = false">
     <view v-if="invalidRoute" class="state panel">
       <text>饭局参数无效</text>
-      <view class="btn tonal" @tap="back">返回饭局</view>
+      <AppButton variant="tonal" size="md" @tap="back">返回饭局</AppButton>
     </view>
     <view v-else-if="loading && !meal" class="state">正在准备饭局...</view>
     <view v-else-if="error && !meal" class="state panel">
       <text>{{ error }}</text>
-      <view class="btn tonal" @tap="load">重新加载</view>
-      <view class="btn ghost" @tap="back">返回饭局</view>
+      <AppButton variant="tonal" size="md" @tap="load">重新加载</AppButton>
+      <AppButton variant="ghost" size="md" @tap="back">返回饭局</AppButton>
     </view>
 
     <template v-else-if="meal">
       <view class="topbar">
         <BackButton label="饭局" />
         <view class="more-wrap" v-if="hasMoreMenuItems" @tap.stop>
-          <view class="more-btn" @tap="showMore = !showMore">⋯</view>
+          <AppButton icon="More" variant="ghost" size="lg"  @tap="showMore = !showMore"/>
           <view class="more-menu" v-if="showMore">
-            <view v-if="interaction.isCook" class="more-item" @tap="setStatus('cooking')">结束点菜</view>
+            <view v-if="interaction.isCook && meal.status !== 'cooking'" class="more-item" @tap="setStatus('cooking')">结束点菜</view>
             <view v-if="interaction.canComplete" class="more-item" @tap="setStatus('done')">完成饭局</view>
             <view v-if="interaction.canCancel" class="more-item danger" @tap="setStatus('cancelled')">取消饭局</view>
           </view>
@@ -36,16 +36,18 @@
         <view class="crew">
           <view v-for="(person, idx) in allMembers" :key="person.id || idx" class="mate"
                 :class="{ cook: person.isCook, you: person.id === me?.id }">
-            <text class="face" :class="memberColorClass(idx)">{{ getInitial(person.name) }}<text v-if="person.isCook" class="hat">🧑‍🍳</text></text>
+            <Avatar :name="person.name || '成员'" :src="assetUrl(person.avatar_path)" :bg-color="memberBgColor(idx)" :size="92" class="face-wrapper" :class="{ cook: person.isCook }">
+              <template #overlay v-if="person.isCook">👑</template>
+            </Avatar>
             <text class="mate-name">{{ person.name || '成员' }}<text v-if="person.id === me?.id">（你）</text></text>
           </view>
         </view>
-        <view v-if="interaction.canCook && !interaction.isCook" class="claim-btn" :class="{ disabled: pending('cook') }" @tap="toggleCook">
-          {{ pending('cook') ? '更新中...' : '认领主厨' }}
-        </view>
-        <view v-if="interaction.isCook" class="claim-btn on" @tap="toggleCook">
-          {{ pending('cook') ? '更新中...' : '退出主厨' }}
-        </view>
+        <AppButton v-if="interaction.canCook && !interaction.isCook" variant="secondary" size="sm" block :disabled="pending('cook')" :loading="pending('cook')" @tap="toggleCook">
+          认领主厨
+        </AppButton>
+        <AppButton v-if="interaction.isCook" variant="ghost" size="sm" block :disabled="pending('cook')" :loading="pending('cook')" @tap="toggleCook">
+          退出主厨
+        </AppButton>
       </view>
 
       <view class="view-tabs">
@@ -80,10 +82,9 @@
       <view v-else-if="tab === 'ordered'" class="view-section">
         <view class="order-list">
           <view v-if="groups.length" class="ordered-actions">
-            <view class="ghost-btn" @tap="openIngredients">
-              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
+            <AppButton variant="outline-dashed" size="sm" block @tap="openIngredients">
               查看食材清单
-            </view>
+            </AppButton>
           </view>
           <view v-if="!groups.length" class="state panel">还没有人点菜</view>
           <view v-for="group in groups" :key="group.dishId" class="order-row">
@@ -113,9 +114,9 @@
             <view v-for="number in 5" :key="number" :class="{ on: rating >= number }" @tap="rating = number">★</view>
           </view>
           <textarea v-model="comment" class="review-textarea" maxlength="200" placeholder="说说这顿饭的味道"/>
-          <view class="btn review-submit" :class="{ disabled: pending('review') }" @tap="submitReview">
-            {{ pending('review') ? '保存中...' : '保存评价' }}
-          </view>
+          <AppButton variant="primary" block :loading="pending('review')" @tap="submitReview">
+            保存评价
+          </AppButton>
         </view>
         <view class="section-gap"></view>
         <view v-for="review in meal.reviews || []" :key="review.id" class="review-row">
@@ -163,9 +164,15 @@
         </view>
       </view>
       <view v-if="detailDish?.source_url" class="source-link" @tap="copySource(detailDish.source_url)">复制菜谱来源</view>
-      <view class="btn block primary" :class="{ disabled: detailDish && pending(`order:${detailDish.id}`), off: !selected.has(detailDish?.id) }"
-            @tap="detailDish && toggleOrder(detailDish.id)">{{ selected.has(detailDish?.id) ? '取消这道菜' : '点这道菜' }}
-      </view>
+      <AppButton
+            variant="primary"
+            block
+            :icon="selected.has(detailDish?.id) ? 'Minus' : 'Plus'"
+            :disabled="detailDish && pending(`order:${detailDish.id}`)"
+            :loading="detailDish && pending(`order:${detailDish.id}`)"
+            @tap="detailDish && toggleOrder(detailDish.id)"
+          >{{ selected.has(detailDish?.id) ? '取消这道菜' : '点这道菜' }}
+      </AppButton>
     </BottomSheet>
 
     <!-- 食材清单弹层 -->
@@ -179,7 +186,7 @@
       <view v-if="ingredientLoading" class="state">正在整理食材...</view>
       <view v-else-if="ingredientError" class="state panel">
         <text>{{ ingredientError }}</text>
-        <view class="btn tonal" @tap="loadIngredients">重试</view>
+        <AppButton variant="tonal" size="md" @tap="loadIngredients">重试</AppButton>
       </view>
       <view v-else-if="!ingredientItems.length" class="state">当前没有需要准备的食材</view>
       <view v-else class="ingredient-content">
@@ -190,7 +197,7 @@
           <text class="ing-amt">{{ ingredientAmount(item) }}</text>
         </view>
       </view>
-      <view v-if="ingredientItems.length" class="btn block primary" @tap="copyIngredients">复制清单</view>
+      <AppButton v-if="ingredientItems.length" variant="primary" block icon="Copy" @tap="copyIngredients">复制清单</AppButton>
     </BottomSheet>
   </view>
 </template>
@@ -201,6 +208,8 @@ import BottomSheet from '../../components/BottomSheet.vue'
 import DishImageCard from '../../components/DishImageCard.vue'
 import MealDishFilters from '../../components/MealDishFilters.vue'
 import Icon from '../../components/Icons.vue'
+import Avatar from '../../components/Avatar.vue'
+import AppButton from '../../components/AppButton.vue'
 import BackButton from '../../components/BackButton.vue'
 import {assetUrl, currentUser, request, run} from '../../api/client'
 import {formatMealTime, ingredientListText, mealInteractionState, numericTimestamp} from '../../utils/app'
@@ -221,6 +230,7 @@ const ingredientSheet = ref(false), ingredientLoading = ref(false), ingredientIt
 const showMore = ref(false)
 const mealTypeLabels = {breakfast: '早餐', lunch: '午餐', dinner: '晚餐'}
 const memberColors = ['member-a1', 'member-a2', 'member-a3', 'member-a4', 'member-a5']
+const memberBgColors = ['var(--theme-danger)', '#56735A', '#C98A2D', '#7A6AAE', '#4a7c9b']
 
 const statusLabels = {
   ordering: '点菜中',
@@ -320,14 +330,13 @@ function memberColorClass(idx) {
   return memberColors[idx % memberColors.length]
 }
 
+function memberBgColor(idx) {
+  return memberBgColors[idx % memberBgColors.length]
+}
+
 function getMemberIndex(person) {
   const idx = allMembers.value.findIndex(m => m.id === person.id)
   return idx >= 0 ? idx : 0
-}
-
-function getInitial(name) {
-  if (!name) return '?'
-  return name.charAt(0)
 }
 
 watch([query, cuisineId], () => {
@@ -590,7 +599,7 @@ onMounted(() => {
   padding: 64rpx 30rpx;
 }
 
-.state .btn {
+.state :deep(.app-btn) {
   margin-top: 22rpx;
 }
 
@@ -616,25 +625,12 @@ onMounted(() => {
   position: relative;
 }
 
-.more-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 76rpx;
-  height: 76rpx;
-  min-height: 76rpx;
-  border: 0;
-  border-radius: 50%;
-  background: #FFFFFF;
-  background: var(--theme-bg-card, #FFFFFF);
+:deep(.more-wrap .app-btn--circle) {
   box-shadow: 0 4rpx 16rpx rgba(39, 33, 26, 0.12);
   color: var(--theme-text-primary);
-  font-size: 34rpx;
-  font-weight: 600;
 }
 
-.more-btn:active {
-  transform: scale(0.95);
+:deep(.more-wrap .app-btn--circle:active) {
   box-shadow: 0 2rpx 8rpx rgba(39, 33, 26, 0.1);
 }
 
@@ -644,7 +640,6 @@ onMounted(() => {
   right: 0;
   width: 280rpx;
   background: var(--theme-bg-surface);
-  border: 1px solid var(--theme-border-subtle);
   border-radius: 16rpx;
   box-shadow: var(--theme-shadow-soft);
   overflow: hidden;
@@ -732,7 +727,7 @@ onMounted(() => {
 
 /* ---------- Panel ---------- */
 .panel {
-  margin: 24rpx 0;
+  margin: var(--space-4) 0;
   padding: 30rpx 40rpx;
   background: #FFFFFF;
   background: var(--theme-bg-card, #FFFFFF);
@@ -766,33 +761,13 @@ onMounted(() => {
   width: 112rpx;
 }
 
-.mate .face {
+.face-wrapper {
   position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 92rpx;
-  height: 92rpx;
   border-radius: 50%;
-  font-size: 34rpx;
-  font-weight: 800;
-  color: #fff;
 }
 
-.face .hat {
-  position: absolute;
-  top: -18rpx;
-  right: -14rpx;
-  font-size: 30rpx;
-  display: none;
-}
-
-.mate.cook .face {
+.face-wrapper.cook {
   box-shadow: 0 0 0 5rpx var(--theme-bg-surface), 0 0 0 9rpx var(--theme-danger);
-}
-
-.mate.cook .face .hat {
-  display: block;
 }
 
 .mate-name {
@@ -800,34 +775,6 @@ onMounted(() => {
   white-space: nowrap;
 }
 
-.claim-btn {
-  display: block;
-  width: 100%;
-  margin-top: 18rpx;
-  padding: 12rpx;
-  border-radius: 28rpx;
-  border: 2rpx solid var(--theme-action-primary);
-  background: transparent;
-  color: var(--theme-action-primary);
-  font-size: 30rpx;
-  font-weight: 700;
-  text-align: center;
-}
-
-.claim-btn:active {
-  background: rgba(232, 130, 74, 0.06);
-}
-
-.claim-btn.on {
-  border-color: var(--theme-danger);
-  background: transparent;
-  color: var(--theme-danger);
-}
-
-.claim-btn.disabled {
-  opacity: 0.48;
-  pointer-events: none;
-}
 
 /* Member colors for face avatars */
 .member-a1 {
@@ -860,7 +807,7 @@ onMounted(() => {
 
 .view-tabs view {
   flex: 1;
-  padding: 20rpx 0;
+  padding: var(--space-2) 0;
   border: 0;
   border-radius: 999px;
   background: transparent;
@@ -885,7 +832,7 @@ onMounted(() => {
 
 /* ---------- View Section ---------- */
 .view-section {
-  padding: 0;
+  margin-top: var(--space-4);
 }
 
 /* ---------- Dish Grid ---------- */
@@ -933,24 +880,7 @@ onMounted(() => {
   padding: 12rpx 0;
 }
 
-.ghost-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 14rpx;
-  width: 100%;
-  padding: 12rpx 0;
-  border: 2rpx dashed var(--theme-action-primary);
-  border-radius: 28rpx;
-  background: transparent;
-  color: var(--theme-action-primary);
-  font-size: 29rpx;
-  font-weight: 700;
-}
 
-.order-list {
-  padding: 12rpx 0;
-}
 
 .order-row {
   display: flex;
@@ -1062,24 +992,6 @@ onMounted(() => {
   outline: none;
 }
 
-.review-submit {
-  display: block;
-  width: 100%;
-  margin-top: 24rpx;
-  padding: 26rpx;
-  border: 0;
-  border-radius: 28rpx;
-  background: var(--theme-action-primary);
-  color: var(--theme-action-on-primary);
-  font-size: 30rpx;
-  font-weight: 700;
-  text-align: center;
-}
-
-.review-submit.disabled {
-  opacity: 0.48;
-  pointer-events: none;
-}
 
 .review-row {
   padding: 26rpx 0;
@@ -1266,30 +1178,7 @@ onMounted(() => {
   font-size: 26rpx;
 }
 
-/* Primary button in sheet */
-.btn.block.primary {
-  display: block;
-  width: 100%;
-  margin-top: 44rpx;
-  padding: 30rpx;
-  border: 0;
-  border-radius: 32rpx;
-  background: var(--theme-action-primary);
-  color: #fff;
-  font-size: 31rpx;
-  font-weight: 700;
-  text-align: center;
-}
 
-.btn.block.primary.disabled {
-  opacity: 0.48;
-  pointer-events: none;
-}
-
-.btn.block.primary.off {
-  background: var(--theme-bg-subtle);
-  color: var(--theme-text-primary);
-}
 
 /* Ingredient Sheet */
 .ingredient-content {
@@ -1315,39 +1204,6 @@ onMounted(() => {
   font-size: 24rpx;
 }
 
-.btn {
-  display: inline-flex;
-  min-height: 80rpx;
-  padding: 0 var(--space-5);
-  align-items: center;
-  justify-content: center;
-  border-radius: 16rpx;
-  background: var(--theme-action-primary);
-  color: var(--theme-action-on-primary);
-  font-size: 27rpx;
-  font-weight: 600;
-  align-self: center;
-}
-
-.btn.disabled {
-  opacity: .48;
-  pointer-events: none;
-}
-
-.btn.tonal {
-  border: 1px solid var(--theme-border-subtle);
-  background: var(--theme-bg-surface);
-  color: var(--theme-text-action);
-}
-
-.btn.ghost {
-  background: transparent;
-  color: var(--theme-text-secondary);
-}
-
-.btn.block {
-  width: 100%;
-}
 
 .input {
   display: flex;

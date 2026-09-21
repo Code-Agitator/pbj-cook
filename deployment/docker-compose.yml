@@ -1,0 +1,11 @@
+services:
+  app:
+    image: pbj-cook:latest
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/app/data
+    environment:
+      - DACOOK_TIMEZONE=Asia/Shanghai
+      - DACOOK_SEED_DEV=0
+    restart: unless-stopped

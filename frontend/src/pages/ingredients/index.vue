@@ -4,23 +4,25 @@
 
     <!-- 添加按钮 -->
     <view v-if="isAdmin" class="page-action">
-      <view class="btn add" @tap="openAdd"><Icon icon="Plus" :size="18" /> 添加食材</view>
+      <AppButton variant="primary" size="md" icon="Plus" block @tap="openAdd">
+        添加食材
+      </AppButton>
     </view>
 
     <!-- 搜索框 -->
     <view class="search-wrap">
-      <view class="search-box">
-        <Icon icon="Search" :size="18" class="search-icon" />
-        <input
-          v-model="searchKeyword"
-          class="search-input"
-          placeholder="搜索食材名称或别名（回车搜索服务器）"
-          confirm-type="search"
-          @input="onSearchInput"
-          @confirm="onSearchConfirm"
-        />
-        <view v-if="searchKeyword" class="search-clear" @tap="clearQuery"><Icon icon="X" :size="16" /></view>
-      </view>
+      <BaseInput
+        v-model="searchKeyword"
+        prefix-icon="Search"
+        placeholder="搜索食材名称或别名"
+        confirm-type="search"
+        @input="onSearchInput"
+        @confirm="onSearchConfirm"
+      >
+        <template #suffix>
+          <view v-if="searchKeyword" class="search-clear" @tap="clearQuery"><Icon icon="X" :size="16" /></view>
+        </template>
+      </BaseInput>
     </view>
 
     <!-- 权限/加载状态 -->
@@ -165,6 +167,8 @@
 <script setup lang="js">
 import { computed, onActivated, onMounted, reactive, ref } from 'vue'
 import BackButton from '../../components/BackButton.vue'
+import AppButton from '../../components/AppButton.vue'
+import BaseInput from '../../components/BaseInput.vue'
 import Icon from '../../components/Icons.vue'
 import { currentUser, request, run } from '../../api/client'
 
@@ -414,44 +418,11 @@ onActivated(load)
 .page-action {
   display: flex;
   justify-content: flex-end;
-  padding: 0 24rpx 12rpx;
+  margin: var(--space-4) 0;
 }
-.add {
-  min-height: 70rpx;
-  padding: 0 22rpx;
-  gap: 8rpx;
-}
-
 /* 搜索框 */
 .search-wrap {
-  padding: 0 24rpx 12rpx;
-}
-.search-box {
-  display: flex;
-  align-items: center;
-  gap: 12rpx;
-  padding: 16rpx 24rpx;
-  background: var(--theme-bg-surface);
-  border-radius: 28rpx;
-  box-shadow: 0 4rpx 16rpx rgba(25, 34, 28, 0.06), 0 1px 2rpx rgba(25, 34, 28, 0.04);
-  flex-direction: row;
-}
-.search-icon {
-  color: var(--theme-text-tertiary);
-  flex-shrink: 0;
-}
-.search-input {
-  flex: 1;
-  border: 0;
-  background: transparent;
-  font-size: 28rpx;
-  font-family: inherit;
-  color: var(--theme-text-primary);
-  outline: none;
-  padding: 0;
-}
-.search-input::placeholder {
-  color: var(--palette-placeholder, #B8AC9C);
+  margin-bottom: var(--space-4);
 }
 .search-clear {
   width: 40rpx;
@@ -493,7 +464,6 @@ onActivated(load)
 
 /* 食材列表 - 可滚动容器 */
 .ingredient-list {
-  padding: 0 24rpx;
   display: flex;
   flex-direction: column;
   gap: 18rpx;
@@ -524,8 +494,9 @@ onActivated(load)
 .ingredient-card {
   background: var(--theme-bg-surface);
   border-radius: 28rpx;
-  padding: 28rpx;
+  padding: 16rpx;
   box-shadow: 0 4rpx 16rpx rgba(25, 34, 28, 0.06), 0 1px 2rpx rgba(25, 34, 28, 0.04);
+  margin-bottom: 12rpx;
 }
 
 .card-head {

@@ -2,7 +2,7 @@
   <view class="page">
     <!-- 顶部问候 -->
     <header class="top">
-      <view class="avatar" aria-hidden="true">{{ (me?.name || '家').charAt(0) }}</view>
+      <Avatar :name="me?.name || '家'" :src="assetUrl(me?.avatar_path)" :size="84" />
       <view class="top-text">
         <text class="family">{{ settings.family_name || '我们的家' }}</text>
         <h1 class="greet">你好，{{ me?.name || '家人' }}</h1>
@@ -27,13 +27,7 @@
     <view v-if="loading && !formattedUpcoming.length" class="state">正在加载饭局...</view>
 
     <!-- 主操作按钮 -->
-    <view class="cta" @tap="showCreate = true">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"
-           aria-hidden="true" class="cta-icon">
-        <path d="M12 5v14M5 12h14"/>
-      </svg>
-      <text>开饭局</text>
-    </view>
+    <AppButton style="margin-top: var(--space-4)" block icon="Plus" @tap="showCreate = true">开饭局</AppButton>
 
     <!-- 底部链接 -->
     <view class="foot">
@@ -64,31 +58,23 @@
       </view>
       <view class="field">
         <text class="label">标题（可选）</text>
-        <input v-model="form.title" class="input" placeholder="例如：周末聚餐"/>
+        <BaseInput v-model="form.title" placeholder="例如：周末聚餐"/>
       </view>
-      <view class="grid2">
+      <view class="grid3">
         <view class="field">
           <text class="label">日期</text>
-          <picker mode="date" :value="form.date" @change="form.date = $event.detail.value">
-            <view class="input picker">{{ form.date }}</view>
-          </picker>
+          <BaseInput v-model="form.date" mode="date" placeholder="选择日期" prefix-icon="Calendar"/>
         </view>
         <view class="field">
           <text class="label">用餐时间</text>
-          <picker mode="time" :value="form.dining_time" @change="form.dining_time = $event.detail.value">
-            <view class="input picker">{{ form.dining_time }}</view>
-          </picker>
+          <BaseInput v-model="form.dining_time" mode="time" placeholder="选择时间" prefix-icon="Clock"/>
+        </view>
+        <view class="field">
+          <text class="label">点菜截止</text>
+          <BaseInput v-model="form.deadline" mode="time" placeholder="选择截止时间" prefix-icon="Clock"/>
         </view>
       </view>
-      <view class="field">
-        <text class="label">点菜截止</text>
-        <picker mode="time" :value="form.deadline" @change="form.deadline = $event.detail.value">
-          <view class="input picker">{{ form.deadline }}</view>
-        </picker>
-      </view>
-      <view class="cta sheet-cta" @tap="create">
-        <text>确认开饭局</text>
-      </view>
+      <AppButton block :loading="createPending" @tap="create">确认开饭局</AppButton>
     </BottomSheet>
   </view>
 </template>
@@ -96,10 +82,13 @@
 <script setup lang="js">
 import {computed, onActivated, onMounted, reactive, ref} from 'vue'
 import AppTabBar from '../../components/AppTabBar.vue'
+import Avatar from '../../components/Avatar.vue'
 import BottomSheet from '../../components/BottomSheet.vue'
 import MealCard from '../../components/MealCard.vue'
 import MealList from '../../components/MealList.vue'
-import {bootstrap, currentUser, request, run} from '../../api/client'
+import AppButton from '../../components/AppButton.vue'
+import BaseInput from '../../components/BaseInput.vue'
+import {assetUrl, bootstrap, currentUser, request, run} from '../../api/client'
 import {localDateKey, sortMealsByDiningTime, validateMealDraft} from '../../utils/app'
 
 const settings = ref({}), me = ref(currentUser()), showCreate = ref(false)
@@ -168,7 +157,9 @@ async function create() {
     }, '饭局已创建')
     if (mealId) {
       showCreate.value = false;
-      uni.navigateTo({url: `/pages/meal-detail/index?id=${mealId}`})
+      setTimeout(() => {
+        uni.navigateTo({url: `/pages/meal-detail/index?id=${mealId}`})
+      }, 200)
     }
   } catch {
   } finally {
@@ -183,7 +174,6 @@ onActivated(load)
 <style scoped>
 /* 瓷 · 设计系统变量 -- 与 login 页面一致 */
 .page {
-  --porcelain: #FAF7F1;
   --card: #FFFFFF;
   --clay: #EFE5D8;
   --ink: #27211A;
@@ -191,7 +181,7 @@ onActivated(load)
   --tomato: #D9482B;
   --tomato-deep: #B93517;
 
-  background: var(--porcelain);
+  background: var(--theme-bg-porcelain, #FAF7F1);
 }
 
 /* ---------- 顶部问候 ---------- */
@@ -200,20 +190,6 @@ onActivated(load)
   align-items: center;
   gap: 24rpx;
   flex-direction: row;
-}
-
-.avatar {
-  width: 88rpx;
-  height: 88rpx;
-  border-radius: 50%;
-  background: var(--tomato);
-  color: #fff;
-  font-size: 34rpx;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
 }
 
 .top-text {
@@ -258,34 +234,7 @@ onActivated(load)
 }
 
 /* ---------- 主操作 ---------- */
-.cta {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 16rpx;
-  margin: 40rpx 0 0 0;
-  padding: 24rpx;
-  border: 0;
-  border-radius: 36rpx;
-  background: var(--tomato);
-  color: #fff;
-  font-size: 32rpx;
-  font-weight: 700;
-  cursor: pointer;
-  box-shadow: 0 20rpx 48rpx rgba(217, 72, 43, 0.28);
-  transition: background 0.15s ease, transform 0.1s ease;
-  flex-direction: row;
-}
-
-.cta:active {
-  transform: scale(0.985);
-  background: var(--tomato-deep);
-}
-
-.cta-icon {
-  width: 36rpx;
-  height: 36rpx;
-}
+/* AppButton 组件已接管按钮样式 */
 
 .foot {
   display: flex;
@@ -413,7 +362,7 @@ onActivated(load)
 }
 
 .field {
-  margin-bottom: 12rpx;
+  margin-bottom: var(--space-4);
 }
 
 .field .label {
@@ -424,46 +373,23 @@ onActivated(load)
   color: var(--ink);
 }
 
-.field .input {
-  width: 100%;
-  padding: 10rpx 32rpx;
-  border: 3rpx solid var(--clay);
-  border-radius: 28rpx;
-  background: var(--card);
-  font-size: 30rpx;
-  font-family: inherit;
-  color: var(--ink);
-  outline: none;
-}
-
-.field .input:focus {
-  border-color: var(--tomato);
-}
-
-.field .input::placeholder {
-  color: #B8AC9C;
-}
-
 .grid2 {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 24rpx;
 }
 
-.picker {
-  display: flex;
-  align-items: center;
+.grid3 {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr;
+  gap: 20rpx;
 }
 
-/* Sheet 内的 CTA 按钮 */
-.sheet-cta {
-  margin: 16rpx 0 0;
+.grid3 .field {
   width: 100%;
-  padding: 20rpx;
-  border-radius: 28rpx;
-  font-size: 32rpx;
-  box-shadow: none;
+  min-width: 0;
 }
+
 
 /* ---------- 焦点可访问性 ---------- */
 :focus-visible {
