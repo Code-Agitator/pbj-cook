@@ -1,6 +1,7 @@
-# PBJCook uni-app
-
-这是 `RendaHuang/DaCook` 的 uni-app + FastAPI 复刻版，主要面向微信小程序，同时保留 H5 调试能力。
+# PBJCook
+- 这是一个基于家庭做饭场景的应用，为了增加家庭做饭的仪式感，并且可以记录历史上做过的饭菜记录，极具成就感，并且有餐厅点菜般的优雅体验
+- 灵感来自于`Gloridust/GanCook`，为了降低使用成本，进行`uniapp`重写，支持发布微信小程序版本或H5版本，并对UI进行全面重构，用更加现代，更少的按钮提高家庭做饭的仪式感
+- 我觉得一个东西必须做出来人愿意用才是好东西，一开始我以网页形式发布并且以`IP:Port`的方式发布，很明显大家对这种形式很不信任，所以我开始使用AI对项目进行Uniapp重写，并且对UI体验做了大量的优化和功能上做了扩展
 
 ## 目录
 
@@ -32,7 +33,8 @@ npm run dev:h5
 npm run build:mp-weixin
 ```
 
-构建产物位于 `frontend/dist/build/mp-weixin`，使用微信开发者工具导入。真机访问时，在"我的 → 服务器设置"填写局域网或 HTTPS 后端地址；正式发布要求在小程序后台配置合法 HTTPS 域名。
+构建产物位于 `frontend/dist/build/mp-weixin`，使用微信开发者工具导入。真机访问时，在"我的 → 服务器设置"填写局域网或 HTTPS
+后端地址；正式发布要求在小程序后台配置合法 HTTPS 域名。
 
 ## 开发模式自动初始化测试数据
 
@@ -54,13 +56,13 @@ $env:DACOOK_SEED_DEV="1"; .venv\Scripts\python -m uvicorn app.main:app --reload 
 
 ## 环境变量
 
-| 变量 | 说明 | 默认值 |
-|------|------|--------|
-| `DACOOK_DATABASE` | SQLite 数据库文件路径 | `backend/data/dacook.db` |
-| `DACOOK_UPLOADS` | 上传文件存储目录 | `backend/data/uploads` |
-| `DACOOK_TIMEZONE` | 时区 | `Asia/Shanghai` |
-| `DACOOK_CORS_ORIGINS` | 允许的 CORS 来源，逗号分隔 | `http://localhost:5173,http://127.0.0.1:5173` |
-| `DACOOK_SEED_DEV` | 设为 `1` 时启动自动填充测试数据 | 不设置 |
+| 变量                    | 说明                 | 默认值                                           |
+|-----------------------|--------------------|-----------------------------------------------|
+| `DACOOK_DATABASE`     | SQLite 数据库文件路径     | `backend/data/dacook.db`                      |
+| `DACOOK_UPLOADS`      | 上传文件存储目录           | `backend/data/uploads`                        |
+| `DACOOK_TIMEZONE`     | 时区                 | `Asia/Shanghai`                               |
+| `DACOOK_CORS_ORIGINS` | 允许的 CORS 来源，逗号分隔   | `http://localhost:5173,http://127.0.0.1:5173` |
+| `DACOOK_SEED_DEV`     | 设为 `1` 时启动自动填充测试数据 | 不设置                                           |
 
 ## 功能范围
 
