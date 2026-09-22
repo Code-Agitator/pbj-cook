@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="PBJCook logo">
+  <!-- background plate -->
+  <rect x="16" y="16" width="480" height="480" rx="112" fill="#FAF7F1"/>
+  <circle cx="256" cy="256" r="200" fill="#EFE5D8"/>
+
+  <!-- toast slice -->
+  <g transform="translate(256 256)">
+    <!-- toast crust -->
+    <path fill="#C98A2D" d="M-124,-6
+      C-124,-96 -78,-138 0,-138
+      C78,-138 124,-96 124,-6
+      C124,74 100,142 0,142
+      C-100,142 -124,74 -124,-6 Z"/>
+    <!-- toast inner -->
+    <path fill="#F3C64B" d="M-100,-6
+      C-100,-84 -62,-114 0,-114
+      C62,-114 100,-84 100,-6
+      C100,64 80,118 0,118
+      C-80,118 -100,64 -100,-6 Z"/>
+
+    <!-- peanut butter wave -->
+    <path fill="#C98A2D" d="M-100,-14
+      C-66,-40 -32,-18 0,-32
+      C34,-46 68,-26 100,-12
+      L100,-6
+      C100,64 80,118 0,118
+      C-80,118 -100,64 -100,-6 Z"/>
+
+    <!-- jelly swirl -->
+    <path fill="#D9482B" d="M-100,10
+      C-64,-8 -30,14 4,2
+      C38,-10 72,2 100,10
+      C98,60 78,118 0,118
+      C-78,118 -98,58 -100,10 Z"/>
+    <!-- jelly highlight -->
+    <ellipse cx="-28" cy="46" rx="20" ry="10" fill="#E05A3A" transform="rotate(-12 -28 46)"/>
+    <ellipse cx="36" cy="70" rx="13" ry="6.5" fill="#E05A3A" transform="rotate(-10 36 70)"/>
+
+    <!-- steam -->
+    <g stroke="#8B7F70" stroke-width="11" stroke-linecap="round" fill="none" opacity="0.75">
+      <path d="M-42,-150 C-34,-166 -50,-176 -42,-192"/>
+      <path d="M42,-150 C50,-166 34,-176 42,-192"/>
+    </g>
+  </g>
+</svg>

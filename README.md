@@ -1,4 +1,7 @@
-# PBJCook
+<div align="center">
+  <img src="frontend/src/static/logo.svg" alt="PBJCook logo" width="128"/>
+  <h1>PBJCook</h1>
+</div>
 
 - 这是一个基于家庭做饭场景的应用，为了增加家庭做饭的仪式感，并且可以记录历史上做过的饭菜记录，极具成就感，并且有餐厅点菜般的优雅体验
 - 灵感来自于`Gloridust/GanCook`，为了降低使用成本，进行`uniapp`重写，支持发布微信小程序版本或H5版本，并对UI进行全面重构，用更加现代，更少的按钮提高家庭做饭的仪式感

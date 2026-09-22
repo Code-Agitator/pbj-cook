@@ -1,5 +1,6 @@
 <template>
   <view class="page no-tab login">
+    <image class="brand-logo" src="/static/logo.png" mode="aspectFit"/>
     <view class="mark">PBJ-COOK</view>
     <text class="title">{{ settings.family_name || '我们的家' }} 开饭啦！</text>
     <text class="intro">{{ pinLabel }}</text>
@@ -150,6 +151,13 @@ onMounted(init)
 }
 
 /* ---- 品牌标识 ---- */
+.brand-logo {
+  width: 176rpx;
+  height: 176rpx;
+  margin-bottom: 24rpx;
+  border-radius: 40rpx;
+}
+
 .mark {
   font-size: 26rpx;
   font-weight: 800;

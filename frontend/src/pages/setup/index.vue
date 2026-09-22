@@ -1,6 +1,6 @@
 <template>
   <view class="page no-tab auth-page">
-    <view class="auth-mark">宴</view>
+    <image class="auth-mark" src="/static/logo.png" mode="aspectFit"/>
     <text class="title">建立家庭饭桌</text>
     <text class="subtle intro">{{ step === 1 ? '先设置家庭名称和你的昵称' : '设置 6 位数字密码' }}</text>
     <view v-if="step===1" class="auth-form">
@@ -58,18 +58,12 @@ async function submit(value) {
 }
 
 .auth-mark {
-  display: flex;
   width: 124rpx;
   height: 124rpx;
   margin-bottom: 30rpx;
-  align-items: center;
-  justify-content: center;
   border: 1px solid var(--theme-border-subtle);
   border-radius: 18rpx;
-  background: var(--theme-bg-surface);
-  color: var(--theme-text-action);
-  font-family: "Songti SC", "STSong", "Noto Serif CJK SC", serif;
-  font-size: 50rpx
+  background: var(--theme-bg-surface)
 }
 
 .intro {
